@@ -1,0 +1,32 @@
+package api.meeting.exception;
+
+import api.meeting.entity.enums.ResponseCodeEnum;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.springframework.http.HttpStatus;
+
+/**
+ * 业务异常类
+ */
+@EqualsAndHashCode(callSuper = true)
+@Data
+public class BusinessException extends Exception {
+
+    int code;
+
+    public BusinessException(String message, int code) {
+        super(message);
+        this.code = code;
+    }
+
+    public BusinessException(String message) {
+        super(message);
+        this.code = HttpStatus.BAD_REQUEST.value();
+    }
+
+    public BusinessException(ResponseCodeEnum status) {
+        super(status.getMsg());
+        this.code = status.getCode();
+    }
+
+}
