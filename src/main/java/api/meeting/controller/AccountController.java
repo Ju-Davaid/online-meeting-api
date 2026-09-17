@@ -1,40 +1,50 @@
 package api.meeting.controller;
 
-import api.meeting.constant.Constant;
-import cn.hutool.captcha.CaptchaUtil;
-import cn.hutool.captcha.ShearCaptcha;
-import cn.hutool.captcha.generator.MathGenerator;
-import cn.hutool.core.math.Calculator;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import api.meeting.entity.vo.CaptchaVo;
+import api.meeting.entity.vo.ResponseVO;
+import api.meeting.service.CaptchaService;
+import jakarta.validation.constraints.NotBlank;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 
-@Slf4j(topic = "api.meeting.controller.AccountController")
+/**
+ * 账户控制器
+ */
+@Slf4j
 @RestController
 @RequestMapping("/")
 @Validated
+@RequiredArgsConstructor
 public class AccountController {
+    private final CaptchaService captchaService;
+
+    /**
+     * 生成验证码
+     *
+     * @param width  验证码宽度
+     * @param height 验证码高度
+     * @return 验证码VO
+     */
     @GetMapping("/captcha")
-    public void captcha(HttpServletRequest request, HttpServletResponse response, @RequestParam(defaultValue = "200") Integer width, @RequestParam(defaultValue = "100") Integer height) throws IOException {
-        ShearCaptcha captcha = CaptchaUtil.createShearCaptcha(width, height,4,4);
-        captcha.setGenerator(new MathGenerator());
-        captcha.createCode();
-        HttpSession session = request.getSession();
-        int answer = (int) Calculator.conversion(captcha.getCode());
-        session.setAttribute(Constant.CAPTCHA_SESSION_Key, answer);
-        log.info("captcha: {}", answer);
-        response.setHeader("Pragma", "no-cache");
-        response.setHeader("Cache-Control", "no-cache");
-        response.setDateHeader("Expires", 0);
-        response.setContentType("image/png");
-        captcha.write(response.getOutputStream());
+    public ResponseVO<CaptchaVo> captcha(@RequestParam(defaultValue = "200") Integer width, @RequestParam(defaultValue = "100") Integer height) {
+        CaptchaVo captchaVo = captchaService.getCaptcha(width, height);
+        return ResponseVO.success("验证码已生成", captchaVo);
+    }
+
+    /**
+     * 刷新验证码
+     *
+     * @param id     验证码id
+     * @param width  验证码宽度
+     * @param height 验证码高度
+     * @return 验证码VO
+     */
+    @GetMapping("/captcha/{id}")
+    public ResponseVO<CaptchaVo> refreshCaptcha(@NotBlank(message = "验证码id不能为空") @PathVariable("id") String id, @RequestParam(defaultValue = "200") Integer width, @RequestParam(defaultValue = "100") Integer height) {
+        CaptchaVo captchaVo = captchaService.refreshCaptcha(id, width, height);
+        return ResponseVO.success("验证码已刷新", captchaVo);
     }
 }
