@@ -24,4 +24,13 @@ public interface CaptchaService {
      * @return 验证码VO
      */
     CaptchaVo refreshCaptcha(String id, Integer width, Integer height);
+
+    /**
+     * 验证验证码
+     *
+     * @param captchaId 验证码ID
+     * @param captcha   验证码
+     * @return 是否验证成功
+     */
+    boolean verifyCaptcha(String captchaId, Integer captcha);
 }

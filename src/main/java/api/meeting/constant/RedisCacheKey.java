@@ -9,5 +9,15 @@ public class RedisCacheKey {
      * 验证码缓存键
      * 格式：captcha:验证码id
      */
-    public static final String CAPTCHA_KEY = "captcha:%s";
+    private static final String CAPTCHA_KEY = "captcha:%s";
+
+    /**
+     * 获取验证码缓存键
+     *
+     * @param captchaId 验证码ID
+     * @return 验证码缓存键
+     */
+    public static String getCaptchaKey(String captchaId) {
+        return String.format(CAPTCHA_KEY, captchaId);
+    }
 }

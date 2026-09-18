@@ -32,7 +32,7 @@ public class CaptchaServiceImpl implements CaptchaService {
         captcha.createCode();
         int answer = (int) Calculator.conversion(captcha.getCode());
         String id = IdUtil.simpleUUID();
-        redisUtils.set(String.format(RedisCacheKey.CAPTCHA_KEY, id), answer, Constant.CAPTCHA_EXPIRE_TIME, TimeUnit.SECONDS);
+        redisUtils.set(RedisCacheKey.getCaptchaKey(id), answer, Constant.CAPTCHA_EXPIRE_TIME, TimeUnit.SECONDS);
         CaptchaVo captchaVo = new CaptchaVo();
         captchaVo.setId(id);
         captchaVo.setImage(captcha.getImageBase64Data());
@@ -41,7 +41,7 @@ public class CaptchaServiceImpl implements CaptchaService {
 
     @Override
     public CaptchaVo refreshCaptcha(String id, Integer width, Integer height) {
-        Integer value = redisUtils.get(String.format(RedisCacheKey.CAPTCHA_KEY, id));
+        Integer value = redisUtils.get(RedisCacheKey.getCaptchaKey(id));
         if (value == null) {
             throw new BusinessException("无效id");
         }
@@ -49,10 +49,23 @@ public class CaptchaServiceImpl implements CaptchaService {
         captcha.setGenerator(new MathGenerator());
         captcha.createCode();
         Integer answer = (int) Calculator.conversion(captcha.getCode());
-        redisUtils.set(String.format(RedisCacheKey.CAPTCHA_KEY, id), answer, Constant.CAPTCHA_EXPIRE_TIME, TimeUnit.SECONDS);
+        redisUtils.set(RedisCacheKey.getCaptchaKey(id), answer, Constant.CAPTCHA_EXPIRE_TIME, TimeUnit.SECONDS);
         CaptchaVo captchaVo = new CaptchaVo();
         captchaVo.setId(id);
         captchaVo.setImage(captcha.getImageBase64Data());
         return captchaVo;
+    }
+
+    @Override
+    public boolean verifyCaptcha(String captchaId, Integer captcha) {
+        try {
+            Integer value = redisUtils.get(RedisCacheKey.getCaptchaKey(captchaId));
+            if (value == null) {
+                return false;
+            }
+            return value.equals(captcha);
+        } finally {
+            redisUtils.delete(RedisCacheKey.getCaptchaKey(captchaId));
+        }
     }
 }

@@ -1,8 +1,10 @@
 package api.meeting.controller;
 
+import api.meeting.entity.dto.RegisterDTO;
 import api.meeting.entity.vo.CaptchaVo;
 import api.meeting.entity.vo.ResponseVO;
 import api.meeting.service.CaptchaService;
+import api.meeting.service.UserService;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AccountController {
     private final CaptchaService captchaService;
+    private final UserService userService;
 
     /**
      * 生成验证码
@@ -46,5 +49,17 @@ public class AccountController {
     public ResponseVO<CaptchaVo> refreshCaptcha(@NotBlank(message = "验证码id不能为空") @PathVariable("id") String id, @RequestParam(defaultValue = "200") Integer width, @RequestParam(defaultValue = "100") Integer height) {
         CaptchaVo captchaVo = captchaService.refreshCaptcha(id, width, height);
         return ResponseVO.success("验证码已刷新", captchaVo);
+    }
+
+    /**
+     * 注册
+     *
+     * @param dto 注册DTO
+     * @return 注册结果
+     */
+    @PostMapping("/register")
+    public ResponseVO<?> register(@Validated @RequestBody RegisterDTO dto) {
+        userService.register(dto);
+        return ResponseVO.success("注册成功");
     }
 }

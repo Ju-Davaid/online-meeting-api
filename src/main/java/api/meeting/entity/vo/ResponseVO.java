@@ -1,7 +1,9 @@
 package api.meeting.entity.vo;
 
-import api.meeting.entity.enums.ResponseCodeEnum;
+import api.meeting.entity.enums.ResponseCode;
 import lombok.Data;
+
+import java.util.Map;
 
 /**
  * 响应VO
@@ -13,6 +15,7 @@ public class ResponseVO<V> {
     private int code;
     private String msg;
     private V data;
+    private Map<String, Object> error;
 
     /**
      * 成功响应
@@ -78,7 +81,7 @@ public class ResponseVO<V> {
      * @param codeEnum 错误码枚举
      * @return 错误响应VO
      */
-    public static <T> ResponseVO<T> error(ResponseCodeEnum codeEnum) {
+    public static <T> ResponseVO<T> error(ResponseCode codeEnum) {
         ResponseVO<T> res = new ResponseVO<>();
         res.setCode(codeEnum.getCode());
         res.setMsg(codeEnum.getMsg());

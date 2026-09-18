@@ -151,7 +151,7 @@ public class RedisUtils<V> {
     /**
      * 删除key
      */
-    public Boolean del(String key) {
+    public Boolean delete(String key) {
         return redisTemplate.delete(key);
     }
 
@@ -195,7 +195,7 @@ public class RedisUtils<V> {
     public boolean unLock(String key, String value) {
         Object currentVal = get(key);
         if (value.equals(currentVal)) {
-            return del(key);
+            return delete(key);
         }
         return false;
     }

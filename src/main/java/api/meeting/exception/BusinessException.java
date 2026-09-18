@@ -1,6 +1,6 @@
 package api.meeting.exception;
 
-import api.meeting.entity.enums.ResponseCodeEnum;
+import api.meeting.entity.enums.ResponseCode;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.http.HttpStatus;
@@ -24,7 +24,7 @@ public class BusinessException extends RuntimeException {
         this.code = HttpStatus.BAD_REQUEST.value();
     }
 
-    public BusinessException(ResponseCodeEnum status) {
+    public BusinessException(ResponseCode status) {
         super(status.getMsg());
         this.code = status.getCode();
     }

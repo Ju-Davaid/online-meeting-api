@@ -1,6 +1,6 @@
 package api.meeting.controller;
 
-import api.meeting.entity.enums.ResponseCodeEnum;
+import api.meeting.entity.enums.ResponseCode;
 import api.meeting.entity.vo.ResponseVO;
 import api.meeting.exception.BusinessException;
 import jakarta.servlet.http.HttpServletResponse;
@@ -45,15 +45,15 @@ public class ExceptionHandleController {
      * @return 响应VO
      */
     @ExceptionHandler(BindException.class)
-    public ResponseVO<Map<String, String>> handelValidateException(BindException exception, HttpServletResponse response) {
-        Map<String, String> errors = new HashMap<>();
+    public ResponseVO<?> handelValidateException(BindException exception, HttpServletResponse response) {
+        Map<String, Object> errors = new HashMap<>();
         exception.getBindingResult().getFieldErrors().forEach(fieldError -> errors.put(fieldError.getField(), fieldError.getDefaultMessage()));
-        ResponseCodeEnum responseCodeEnum = ResponseCodeEnum.ILLEGAL_PARAM;
-        response.setStatus(responseCodeEnum.getCode());
-        ResponseVO<Map<String, String>> res = new ResponseVO<>();
-        res.setCode(responseCodeEnum.getCode());
-        res.setMsg(responseCodeEnum.getMsg());
-        res.setData(errors);
+        ResponseCode responseCode = ResponseCode.ILLEGAL_PARAM;
+        response.setStatus(responseCode.getCode());
+        ResponseVO<?> res = new ResponseVO<>();
+        res.setCode(responseCode.getCode());
+        res.setMsg(responseCode.getMsg());
+        res.setError(errors);
         log.error("BindException: {}", exception.getMessage(), exception);
         return res;
     }
@@ -69,9 +69,9 @@ public class ExceptionHandleController {
     public ResponseVO<?> handelRuntimeException(Exception exception, HttpServletResponse response) {
         response.setStatus(500);
         ResponseVO<?> res = new ResponseVO<>();
-        ResponseCodeEnum responseCodeEnum = ResponseCodeEnum.INTERNAL_SERVER_ERROR;
-        res.setCode(responseCodeEnum.getCode());
-        res.setMsg(responseCodeEnum.getMsg() + ":" + exception.getMessage());
+        ResponseCode responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
+        res.setCode(responseCode.getCode());
+        res.setMsg(responseCode.getMsg() + ":" + exception.getMessage());
         res.setData(null);
         log.error("Exception: {}", exception.getMessage(), exception);
         return res;
