@@ -64,3 +64,13 @@ mybatis‑plus:
     db‑config:
       id‑type: assign_id
       table-prefix: meeting_
+# jwt 配置
+jwt:
+  secret: Pioneer***^^^@
+#  expiration: 864000000 # 1天
+  refresh-expiration: 6048000000 # 7天
+  header: Authorization
+  prefix: "Bearer "
+  issuer: "Davaid.Ju"
+  expiration: 120000 # 2分钟
+

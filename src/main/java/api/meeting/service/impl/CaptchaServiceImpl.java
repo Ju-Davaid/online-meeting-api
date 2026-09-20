@@ -2,6 +2,7 @@ package api.meeting.service.impl;
 
 import api.meeting.constant.Constant;
 import api.meeting.constant.RedisCacheKey;
+import api.meeting.entity.enums.ResponseCode;
 import api.meeting.entity.vo.CaptchaVo;
 import api.meeting.exception.BusinessException;
 import api.meeting.service.CaptchaService;
@@ -43,7 +44,7 @@ public class CaptchaServiceImpl implements CaptchaService {
     public CaptchaVo refreshCaptcha(String id, Integer width, Integer height) {
         Integer value = redisUtils.get(RedisCacheKey.getCaptchaKey(id));
         if (value == null) {
-            throw new BusinessException("无效id");
+            throw new BusinessException(ResponseCode.INVALID_CAPTCHA_ID);
         }
         ShearCaptcha captcha = CaptchaUtil.createShearCaptcha(width, height, 4, 4);
         captcha.setGenerator(new MathGenerator());

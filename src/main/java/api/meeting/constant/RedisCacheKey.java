@@ -10,6 +10,11 @@ public class RedisCacheKey {
      * 格式：captcha:验证码id
      */
     private static final String CAPTCHA_KEY = "captcha:%s";
+    /**
+     * 黑名单token缓存键
+     * 格式：blacklist:token:token
+     */
+    private static final String BLACK_TOKEN_KEY = "blacklist:token";
 
     /**
      * 获取验证码缓存键
