@@ -23,4 +23,11 @@ public interface UserService extends IService<User> {
      * @param dto 登录DTO
      */
     UserLoginVO login(UserLoginDTO dto);
+
+    /**
+     * 退出登录
+     *
+     * @param token 登录凭证
+     */
+    void logout(String token);
 }

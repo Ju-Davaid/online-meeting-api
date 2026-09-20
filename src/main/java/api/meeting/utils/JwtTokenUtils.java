@@ -1,6 +1,7 @@
 package api.meeting.utils;
 
 import api.meeting.config.JwtConfig;
+import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.signers.JWTSignerUtil;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
@@ -28,7 +28,7 @@ public class JwtTokenUtils {
     public static class Payload {
         private String userId;
         private String username;
-        private LocalDateTime expiresAt;
+        private Date expiresAt;
         private Integer status;
     }
 
@@ -40,13 +40,14 @@ public class JwtTokenUtils {
      */
     public String generateToken(Payload payload) {
         log.info("generateToken: {}", JSONUtil.toJsonStr(jwtConfig));
+        Date now = new Date();
         return JWT.create()
                 .setPayload("userId", payload.getUserId())
                 .setPayload("username", payload.getUsername())
                 .setPayload("status", payload.getStatus())
                 .setPayload("expiresAt", payload.getExpiresAt())
-                .setExpiresAt(new Date(System.currentTimeMillis() + jwtConfig.getExpiration()))
-                .setIssuedAt(new Date())
+                .setExpiresAt(new Date(now.getTime() + jwtConfig.getExpiration()))
+                .setIssuedAt(now)
                 .setIssuer(jwtConfig.getIssuer())
                 .setSigner(JWTSignerUtil.hs256(jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8)))
                 .sign();
@@ -61,11 +62,11 @@ public class JwtTokenUtils {
     public Payload parseToken(String token) {
         JWT jwt = JWT.of(token);
         Payload payload = new Payload();
-        payload.setUserId(jwt.getPayload("userId") != null ?
-                jwt.getPayload("userId").toString() : null);
-        payload.setUsername((String) jwt.getPayload("username"));
-        payload.setStatus(jwt.getPayload("status") != null ?
-                Integer.valueOf(jwt.getPayload("status").toString()) : null);
+        JSONObject jsonObject = jwt.getPayloads();
+        payload.setUserId(jsonObject.getStr("userId"));
+        payload.setUsername(jsonObject.getStr("username"));
+        payload.setStatus(jsonObject.getInt("status"));
+        payload.setExpiresAt(jsonObject.getDate("expiresAt"));
         return payload;
     }
 

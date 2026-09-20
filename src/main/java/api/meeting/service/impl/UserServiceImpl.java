@@ -1,6 +1,7 @@
 package api.meeting.service.impl;
 
 import api.meeting.config.JwtConfig;
+import api.meeting.constant.RedisCacheKey;
 import api.meeting.entity.dto.UserLoginDTO;
 import api.meeting.entity.dto.UserRegisterDTO;
 import api.meeting.entity.enums.ResponseCode;
@@ -13,6 +14,7 @@ import api.meeting.mapper.UserMapper;
 import api.meeting.service.CaptchaService;
 import api.meeting.service.UserService;
 import api.meeting.utils.JwtTokenUtils;
+import api.meeting.utils.RedisUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDate;
 import java.util.Date;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 用户服务实现类
@@ -35,6 +38,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtTokenUtils jwtTokenUtils;
     private final JwtConfig jwtConfig;
+    private final RedisUtils<String> redisUtils;
 
     @Override
     public void register(UserRegisterDTO dto) {
@@ -53,7 +57,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setUsername(dto.getUsername());
         user.setEmail(dto.getEmail());
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
-        user.setCreatedAt(LocalDate.now());
+        user.setCreatedAt(new Date());
         user.setStatus(UserStatus.NORMAL.getCode());
         user.setGender(UserGender.UNKNOWN.getCode());
         int rows = userMapper.insert(user);
@@ -64,6 +68,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public UserLoginVO login(UserLoginDTO dto) {
+        Date now = new Date();
         if (!captchaService.verifyCaptcha(dto.getCaptchaId(), dto.getCaptcha())) {
             throw new BusinessException(ResponseCode.INVALID_CAPTCHA);
         }
@@ -78,6 +83,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
+        user.setLastLoginTime(now);
+        userMapper.updateById(user);
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             throw new BusinessException("密码错误");
         }
@@ -93,13 +100,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         userInfo.setStatus(user.getStatus());
         userInfo.setGender(user.getGender());
         vo.setUserInfo(userInfo);
-        vo.setExpiration(new Date(System.currentTimeMillis() + jwtConfig.getExpiration()));
+        vo.setExpiration(new Date(now.getTime() + jwtConfig.getExpiration()));
         JwtTokenUtils.Payload payload = new JwtTokenUtils.Payload();
         payload.setUserId(user.getId());
         payload.setUsername(user.getUsername());
         payload.setStatus(user.getStatus());
+        payload.setExpiresAt(new Date(now.getTime() + jwtConfig.getExpiration()));
         String accessToken = jwtTokenUtils.generateToken(payload);
         vo.setAccessToken(accessToken);
         return vo;
+    }
+
+    @Override
+    public void logout(String token) {
+        JwtTokenUtils.Payload payload = jwtTokenUtils.parseAndValidate(token);
+        if (payload == null) {
+            throw new BusinessException(ResponseCode.INVALID_TOKEN);
+        }
+        Date now = new Date();
+        if (now.after(payload.getExpiresAt())) {
+            throw new BusinessException(ResponseCode.UNAUTHORIZED);
+        }
+        long restTime = payload.getExpiresAt().getTime() - now.getTime();
+        redisUtils.set(RedisCacheKey.getBlacklistTokenKey(payload.getUserId()), token, restTime, TimeUnit.MILLISECONDS);
     }
 }

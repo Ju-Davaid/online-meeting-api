@@ -23,7 +23,6 @@ public class SecurityConfig {
             "/captcha",
             "/register",
             "/login",
-            "/logout"
     };
 
     @Bean
@@ -36,6 +35,7 @@ public class SecurityConfig {
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .logout(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(
                         authorizeHttpRequests -> authorizeHttpRequests
                                 .requestMatchers(PUBLIC_PATH).

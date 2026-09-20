@@ -17,6 +17,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -85,12 +86,28 @@ public class AccountController {
     }
 
     @GetMapping("/userInfo")
-    public ResponseVO<UserLoginVO.UserInfo> getUserInfo(HttpServletRequest request) {
-        User user = (User) request.getAttribute(Constant.USERINFO_SESSION_KEY);
+    public ResponseVO<UserLoginVO.UserInfo> getUserInfo(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
         if (user == null) {
             throw new BusinessException(ResponseCode.UNAUTHORIZED);
         }
         UserLoginVO.UserInfo userInfo = BeanUtil.copyProperties(user, UserLoginVO.UserInfo.class);
         return ResponseVO.success("获取用户信息成功", userInfo);
+    }
+
+    /**
+     * 退出登录
+     *
+     * @return 退出登录结果
+     */
+    @GetMapping("/logout")
+    public ResponseVO<?> logout(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        if (user == null) {
+            throw new BusinessException(ResponseCode.UNAUTHORIZED);
+        }
+        String token = user.getToken();
+        userService.logout(token);
+        return ResponseVO.success("退出登录成功");
     }
 }
