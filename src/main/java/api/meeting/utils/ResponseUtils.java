@@ -5,6 +5,7 @@ import api.meeting.entity.vo.ResponseVO;
 import cn.hutool.json.JSONConfig;
 import cn.hutool.json.JSONUtil;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
@@ -48,8 +49,9 @@ public class ResponseUtils {
         jsonConfig.setIgnoreNullValue(false);
         String json = JSONUtil.toJsonStr(responseVO, jsonConfig);
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.FORBIDDEN, Unpooled.copiedBuffer(json.getBytes(StandardCharsets.UTF_8)));
+        response.headers().set("Connection", "close");
         response.headers().set("Content-Length", response.content().readableBytes());
         response.headers().set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
-        ctx.channel().writeAndFlush(response);
+        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
 }

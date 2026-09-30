@@ -1,5 +1,8 @@
 package api.meeting.constant;
 
+import api.meeting.utils.JwtTokenUtils;
+import io.netty.util.AttributeKey;
+
 public class Constant {
     /**
      * 验证码过期时间（秒）
@@ -13,4 +16,5 @@ public class Constant {
      * token会话键
      */
     public static final String TOKEN_SESSION_KEY = "token";
+    public static final String NETTY_TOKEN_PAYLOAD_KEY = "netty_token_payload";
 }
