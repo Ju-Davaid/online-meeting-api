@@ -5,6 +5,8 @@ import api.meeting.entity.vo.ResponseVO;
 import api.meeting.exception.BusinessException;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -55,6 +57,18 @@ public class ExceptionHandleController {
         res.setMsg(responseCode.getMsg());
         res.setError(errors);
         log.error("BindException: {}", exception.getMessage(), exception);
+        return res;
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseVO<?> handelAuthException(AccessDeniedException exception, HttpServletResponse response) {
+        response.setStatus(401);
+        ResponseVO<?> res = new ResponseVO<>();
+        ResponseCode responseCode = ResponseCode.FORBIDDEN;
+        res.setCode(responseCode.getCode());
+        res.setMsg(responseCode.getMsg());
+        res.setData(null);
+        log.error("AccessDeniedException: {}", exception.getMessage(), exception);
         return res;
     }
 

@@ -4,6 +4,12 @@ import api.meeting.entity.enums.ResponseCode;
 import api.meeting.entity.vo.ResponseVO;
 import cn.hutool.json.JSONConfig;
 import cn.hutool.json.JSONUtil;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 
@@ -32,5 +38,18 @@ public class ResponseUtils {
         jsonConfig.setIgnoreNullValue(false);
         String json = JSONUtil.toJsonStr(responseVO, jsonConfig);
         response.getWriter().write(json);
+    }
+
+    public static void writeNettyResponse(ChannelHandlerContext ctx, ResponseCode responseCodeEnum) {
+        ResponseVO<?> responseVO = new ResponseVO<>();
+        responseVO.setCode(responseCodeEnum.getCode());
+        responseVO.setMsg(responseCodeEnum.getMsg());
+        JSONConfig jsonConfig = new JSONConfig();
+        jsonConfig.setIgnoreNullValue(false);
+        String json = JSONUtil.toJsonStr(responseVO, jsonConfig);
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.FORBIDDEN, Unpooled.copiedBuffer(json.getBytes(StandardCharsets.UTF_8)));
+        response.headers().set("Content-Length", response.content().readableBytes());
+        response.headers().set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+        ctx.channel().writeAndFlush(response);
     }
 }

@@ -106,7 +106,12 @@
             <artifactId>spring-boot-devtools</artifactId>
             <scope>runtime</scope>
         </dependency>
-
+        <!-- netty 依赖-->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>4.2.18.Final</version>
+        </dependency>
     </dependencies>
 
     <build>

@@ -1,3 +1,7 @@
+server:
+  port: 8080
+ws:
+  port: 8081
 spring:
   application:
     name: MeetingApi
@@ -47,6 +51,7 @@ spring:
         prefetch: 1                     # 一次拿1条消息，防止消息堆积
         concurrency: 2                  # 消费线程数
         max-concurrency: 4
+
 mybatis‑plus:
   # mapper xml 文件位置
   mapper‑locations: classpath:mapper/**/*.xml

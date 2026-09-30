@@ -17,6 +17,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -109,5 +110,11 @@ public class AccountController {
         String token = user.getToken();
         userService.logout(token);
         return ResponseVO.success("退出登录成功");
+    }
+
+    @GetMapping("/test")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseVO<?> test() {
+        return ResponseVO.success("测试成功");
     }
 }
