@@ -1,6 +1,7 @@
 package api.meeting.utils;
 
 import api.meeting.config.JwtConfig;
+import api.meeting.constant.RedisCacheKey;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.jwt.JWT;
@@ -23,6 +24,7 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class JwtTokenUtils {
     private final JwtConfig jwtConfig;
+    private final RedisUtils<String> redisUtils;
 
     @Data
     public static class Payload {
@@ -95,9 +97,10 @@ public class JwtTokenUtils {
     }
 
     /**
-     * 校验JWT签名 + 是否过期
+     * 校验JWT是否有效
+     * （校验签名 + 是否过期 + 是否在黑名单中）
      *
-     * @param token      JWT
+     * @param token      JWT令牌
      * @param timeMillis 允许的时间偏移量（毫秒），容忍时钟偏差
      * @return 是否有效
      */
@@ -106,7 +109,6 @@ public class JwtTokenUtils {
             JWT jwt = JWT.of(token)
                     .setSigner(JWTSignerUtil.hs256(
                             jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8)));
-            // verify 校验签名，validate 校验 exp / nbf / iat 时间声明
             return jwt.verify() && jwt.validate(timeMillis);
         } catch (Exception e) {
             return false;
@@ -122,6 +124,10 @@ public class JwtTokenUtils {
         if (!validateToken(token, 0)) {
             return null;
         }
-        return parseToken(token);
+        Payload payload = parseToken(token);
+        if (redisUtils.hasKey(RedisCacheKey.getBlacklistTokenKey(payload.getUserId()))) {
+            return null;
+        }
+        return payload;
     }
 }

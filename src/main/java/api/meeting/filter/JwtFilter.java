@@ -1,15 +1,12 @@
 package api.meeting.filter;
 
 import api.meeting.config.SecurityConfig;
-import api.meeting.constant.Constant;
-import api.meeting.constant.RedisCacheKey;
 import api.meeting.entity.enums.ResponseCode;
 import api.meeting.entity.enums.UserRole;
 import api.meeting.entity.enums.UserStatus;
 import api.meeting.entity.po.User;
 import api.meeting.service.UserService;
 import api.meeting.utils.JwtTokenUtils;
-import api.meeting.utils.RedisUtils;
 import api.meeting.utils.ResponseUtils;
 import cn.hutool.json.JSONUtil;
 import jakarta.servlet.FilterChain;
@@ -25,7 +22,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.awt.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,7 +36,6 @@ import java.util.List;
 public class JwtFilter extends OncePerRequestFilter {
     private final JwtTokenUtils jwtTokenUtils;
     private final UserService userService;
-    private final RedisUtils<String> redisUtils;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws IOException {
@@ -51,19 +46,16 @@ public class JwtFilter extends OncePerRequestFilter {
                 JwtTokenUtils.Payload payload = jwtTokenUtils.parseAndValidate(token);
                 log.info("JWT 过滤器解析JWT:{}", JSONUtil.toJsonStr(payload));
                 if (payload != null) {
-                    if (redisUtils.hasKey(RedisCacheKey.getBlacklistTokenKey(payload.getUserId()))) {
-                        clearContext(response, ResponseCode.INVALID_TOKEN);
-                        return;
-                    }
+
                     User user = userService.getById(payload.getUserId());
                     // 判断用户是否存在
                     if (user == null) {
-                        clearContext(response, ResponseCode.INVALID_TOKEN);
+                        clearContext(response);
                         return;
                     }
                     // 判断用户状态是否正常
                     if (!UserStatus.NORMAL.getCode().equals(user.getStatus())) {
-                        clearContext(response, ResponseCode.INVALID_TOKEN);
+                        clearContext(response);
                         return;
                     }
                     user.setToken(token);
@@ -71,17 +63,17 @@ public class JwtFilter extends OncePerRequestFilter {
                     UsernamePasswordAuthenticationToken authenticationToken = getAuthenticationToken(role, user);
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
                 } else {
-                    clearContext(response, ResponseCode.INVALID_TOKEN);
+                    clearContext(response);
                     return;
                 }
             } else {
-                clearContext(response, ResponseCode.INVALID_TOKEN);
+                clearContext(response);
                 return;
             }
             filterChain.doFilter(request, response);
         } catch (Exception e) {
             log.error("JWT 过滤器异常:{}", token, e);
-            clearContext(response, ResponseCode.INVALID_TOKEN);
+            clearContext(response);
         }
     }
 
@@ -112,11 +104,10 @@ public class JwtFilter extends OncePerRequestFilter {
     /**
      * 清除上下文
      *
-     * @param response     响应
-     * @param responseCode 响应码
+     * @param response 响应
      */
-    private void clearContext(HttpServletResponse response, ResponseCode responseCode) throws IOException {
+    private void clearContext(HttpServletResponse response) throws IOException {
         SecurityContextHolder.clearContext();
-        ResponseUtils.writeErrorResponse(response, responseCode);
+        ResponseUtils.writeErrorResponse(response, ResponseCode.FORBIDDEN);
     }
 }
