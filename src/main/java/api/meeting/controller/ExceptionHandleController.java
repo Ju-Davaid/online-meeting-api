@@ -4,6 +4,7 @@ import api.meeting.entity.enums.ResponseCode;
 import api.meeting.entity.vo.ResponseVO;
 import api.meeting.exception.BusinessException;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -46,17 +47,21 @@ public class ExceptionHandleController {
      * @param response  HTTP响应对象
      * @return 响应VO
      */
-    @ExceptionHandler(BindException.class)
-    public ResponseVO<?> handelValidateException(BindException exception, HttpServletResponse response) {
+    @ExceptionHandler({BindException.class, ConstraintViolationException.class})
+    public ResponseVO<?> handelValidateException(Exception exception, HttpServletResponse response) {
         Map<String, Object> errors = new HashMap<>();
-        exception.getBindingResult().getFieldErrors().forEach(fieldError -> errors.put(fieldError.getField(), fieldError.getDefaultMessage()));
+        if (exception instanceof BindException) {
+            ((BindException) exception).getBindingResult().getFieldErrors().forEach(fieldError -> errors.put(fieldError.getField(), fieldError.getDefaultMessage()));
+        } else if (exception instanceof ConstraintViolationException) {
+            ((ConstraintViolationException) exception).getConstraintViolations().forEach(constraintViolation -> errors.put(constraintViolation.getPropertyPath().toString(), constraintViolation.getMessage()));
+        }
         ResponseCode responseCode = ResponseCode.ILLEGAL_PARAM;
         response.setStatus(responseCode.getCode());
         ResponseVO<?> res = new ResponseVO<>();
         res.setCode(responseCode.getCode());
         res.setMsg(responseCode.getMsg());
         res.setError(errors);
-        log.error("BindException: {}", exception.getMessage(), exception);
+        log.error("ValidateException: {}", exception.getMessage(), exception);
         return res;
     }
 

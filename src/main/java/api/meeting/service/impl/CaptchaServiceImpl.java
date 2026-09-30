@@ -13,6 +13,7 @@ import cn.hutool.captcha.generator.MathGenerator;
 import cn.hutool.core.math.Calculator;
 import cn.hutool.core.util.IdUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
@@ -20,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * 验证码服务实现类
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CaptchaServiceImpl implements CaptchaService {
@@ -42,6 +44,7 @@ public class CaptchaServiceImpl implements CaptchaService {
 
     @Override
     public CaptchaVo refreshCaptcha(String id, Integer width, Integer height) {
+        log.info("刷新验证码，id：{}，width：{}，height：{}", id, width, height);
         Integer value = redisUtils.get(RedisCacheKey.getCaptchaKey(id));
         if (value == null) {
             throw new BusinessException(ResponseCode.INVALID_CAPTCHA_ID);
