@@ -105,8 +105,7 @@ public class AccountController {
         if (user == null) {
             throw new BusinessException(ResponseCode.FORBIDDEN);
         }
-        String token = user.getToken();
-        userService.logout(token);
+        userService.logout(user);
         return ResponseVO.success("退出登录成功");
     }
 

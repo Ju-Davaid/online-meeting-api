@@ -27,7 +27,7 @@ public interface UserService extends IService<User> {
     /**
      * 退出登录
      *
-     * @param token 登录凭证
+     * @param user 用户实体
      */
-    void logout(String token);
+    void logout(User user);
 }

@@ -18,11 +18,11 @@ import api.meeting.utils.RedisUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.time.LocalDate;
 import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -83,6 +83,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
+        if (user.getLastLoginTime() != null && user.getLastOffTime() != null && user.getLastLoginTime().after(user.getLastOffTime())) {
+            throw new BusinessException("用户已在其他设备登录");
+        }
         user.setLastLoginTime(now);
         userMapper.updateById(user);
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
@@ -112,16 +115,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public void logout(String token) {
-        JwtTokenUtils.Payload payload = jwtTokenUtils.parseAndValidate(token);
+    public void logout(User user) {
+        JwtTokenUtils.Payload payload = jwtTokenUtils.parseAndValidate(user.getToken());
         if (payload == null) {
-            throw new BusinessException(ResponseCode.INVALID_TOKEN);
+            throw new BusinessException(ResponseCode.FORBIDDEN);
         }
         Date now = new Date();
+        user.setLastOffTime(now);
+        userMapper.updateById(user);
         if (now.after(payload.getExpiresAt())) {
-            throw new BusinessException(ResponseCode.UNAUTHORIZED);
+            throw new BusinessException(ResponseCode.FORBIDDEN);
         }
+
         long restTime = payload.getExpiresAt().getTime() - now.getTime();
-        redisUtils.set(RedisCacheKey.getBlacklistTokenKey(payload.getUserId()), token, restTime, TimeUnit.MILLISECONDS);
+        redisUtils.set(RedisCacheKey.getBlacklistTokenKey(payload.getUserId()), user.getToken(), restTime, TimeUnit.MILLISECONDS);
     }
 }
