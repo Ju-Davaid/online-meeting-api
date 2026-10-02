@@ -65,7 +65,6 @@ mybatis‑plus:
   global‑config:
     db‑config:
       id‑type: assign_id
-      table-prefix: meeting_
 # jwt 配置
 jwt:
   secret: Pioneer***^^^@

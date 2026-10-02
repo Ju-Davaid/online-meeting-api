@@ -14,6 +14,7 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -23,13 +24,13 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class NettyWebSocketStarter implements Runnable {
     @Value("${ws.port}")
     private Integer port;
-    @Resource
-    TokenVerifyHandler tokenVerifyHandler;
-    @Resource
-    WebSocketHandler webSocketHandler;
+    private final TokenVerifyHandler tokenVerifyHandler;
+    private final WebSocketHandler webSocketHandler;
+    private final HeartBeatHandler heartBeatHandler;
     private final EventLoopGroup bossGroup = new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
     private final EventLoopGroup workerGroup = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
 
@@ -55,7 +56,7 @@ public class NettyWebSocketStarter implements Runnable {
                                     // 添加 IdleStateHandler 处理空闲连接，30 秒内无数据交互则关闭连接
                                     pipeline.addLast(new IdleStateHandler(6, 0, 0));
                                     // 添加 HeartBeatHandler 处理心跳
-                                    pipeline.addLast(new HeartBeatHandler());
+                                    pipeline.addLast(heartBeatHandler);
                                     // 添加 TokenVerifyHandler 处理 JWT 校验
                                     pipeline.addLast(tokenVerifyHandler);
                                     // 添加 WebSocketHandler 处理 WebSocket 消息

@@ -1,21 +1,18 @@
 package api.meeting.websocket.netty.handler;
 
-import api.meeting.config.JwtConfig;
 import api.meeting.constant.Constant;
-import api.meeting.entity.enums.ResponseCode;
 import api.meeting.utils.JwtTokenUtils;
-import api.meeting.utils.ResponseUtils;
-import api.meeting.websocket.utils.ChannelContextUtil;
+import api.meeting.websocket.netty.utils.ChannelContextUtil;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.util.AttributeKey;
-import lombok.NoArgsConstructor;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
+
+import java.util.List;
 
 /**
  * 令牌验证处理器
@@ -25,23 +22,20 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 @ChannelHandler.Sharable
 public class TokenVerifyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
-    private final JwtConfig jwtConfig;
     private final JwtTokenUtils jwtTokenUtils;
+    private final ChannelContextUtil channelContextUtil;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest fullHttpRequest) {
-        String token = fullHttpRequest.headers().get(jwtConfig.getHeader());
-        if (StringUtils.hasText(token)) {
-            token = token.replace(jwtConfig.getPrefix(), "");
-        }
+        log.info("收到 WebSocket 握手请求, uri={}", fullHttpRequest.uri());
+        QueryStringDecoder decoder = new QueryStringDecoder(fullHttpRequest.uri());
+        List<String> tokenList = decoder.parameters().get(Constant.WEBSOCKET_TOKEN_KEY);
+        String token = (tokenList != null && !tokenList.isEmpty()) ? tokenList.get(0) : null;
         JwtTokenUtils.Payload payload = jwtTokenUtils.parseAndValidate(token);
         if (payload == null) {
-            log.error("JWT 校验失败:{}", token);
-            ResponseUtils.writeNettyResponse(ctx, ResponseCode.FORBIDDEN);
-            return;
+            log.warn("JWT 校验失败，将在握手完成后关闭连接");
         }
-        ChannelContextUtil.<JwtTokenUtils.Payload>setAttribute(ctx, Constant.NETTY_TOKEN_PAYLOAD_KEY, payload);
+        channelContextUtil.setAttribute(ctx, Constant.NETTY_TOKEN_PAYLOAD_KEY, payload);
         ctx.fireChannelRead(fullHttpRequest.retain());
-        // TODO token 校验通过，继续处理后续消息
     }
 }
