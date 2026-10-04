@@ -21,7 +21,7 @@ public class UserRegisterDTO {
     @Size(message = "密码长度必须在 6-20 个字符之间", min = 6, max = 20)
     private String password;
     @NotNull(message = "验证码不能为空")
-    private Integer captcha;
+    private String captcha;
     @NotBlank(message = "验证码ID不能为空")
     private String captchaId;
 

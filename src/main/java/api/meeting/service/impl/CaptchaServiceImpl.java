@@ -25,17 +25,15 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 public class CaptchaServiceImpl implements CaptchaService {
-    private final RedisUtils<Integer> redisUtils;
+    private final RedisUtils<String> redisUtils;
 
 
     @Override
     public CaptchaVo getCaptcha(Integer width, Integer height) {
         ShearCaptcha captcha = CaptchaUtil.createShearCaptcha(width, height, 4, 4);
-        captcha.setGenerator(new MathGenerator());
         captcha.createCode();
-        int answer = (int) Calculator.conversion(captcha.getCode());
         String id = IdUtil.simpleUUID();
-        redisUtils.set(RedisCacheKey.getCaptchaKey(id), answer, Constant.CAPTCHA_EXPIRE_TIME, TimeUnit.SECONDS);
+        redisUtils.set(RedisCacheKey.getCaptchaKey(id), captcha.getCode(), Constant.CAPTCHA_EXPIRE_TIME, TimeUnit.SECONDS);
         CaptchaVo captchaVo = new CaptchaVo();
         captchaVo.setId(id);
         captchaVo.setImage(captcha.getImageBase64Data());
@@ -45,15 +43,13 @@ public class CaptchaServiceImpl implements CaptchaService {
     @Override
     public CaptchaVo refreshCaptcha(String id, Integer width, Integer height) {
         log.info("刷新验证码，id：{}，width：{}，height：{}", id, width, height);
-        Integer value = redisUtils.get(RedisCacheKey.getCaptchaKey(id));
+        String value = redisUtils.get(RedisCacheKey.getCaptchaKey(id));
         if (value == null) {
             throw new BusinessException(ResponseCode.INVALID_CAPTCHA_ID);
         }
         ShearCaptcha captcha = CaptchaUtil.createShearCaptcha(width, height, 4, 4);
-        captcha.setGenerator(new MathGenerator());
         captcha.createCode();
-        Integer answer = (int) Calculator.conversion(captcha.getCode());
-        redisUtils.set(RedisCacheKey.getCaptchaKey(id), answer, Constant.CAPTCHA_EXPIRE_TIME, TimeUnit.SECONDS);
+        redisUtils.set(RedisCacheKey.getCaptchaKey(id), captcha.getCode(), Constant.CAPTCHA_EXPIRE_TIME, TimeUnit.SECONDS);
         CaptchaVo captchaVo = new CaptchaVo();
         captchaVo.setId(id);
         captchaVo.setImage(captcha.getImageBase64Data());
@@ -61,13 +57,13 @@ public class CaptchaServiceImpl implements CaptchaService {
     }
 
     @Override
-    public boolean verifyCaptcha(String captchaId, Integer captcha) {
+    public boolean verifyCaptcha(String captchaId, String captcha) {
         try {
-            Integer value = redisUtils.get(RedisCacheKey.getCaptchaKey(captchaId));
+            String value = redisUtils.get(RedisCacheKey.getCaptchaKey(captchaId));
             if (value == null) {
                 return false;
             }
-            return value.equals(captcha);
+            return value.equalsIgnoreCase(captcha);
         } finally {
             redisUtils.delete(RedisCacheKey.getCaptchaKey(captchaId));
         }

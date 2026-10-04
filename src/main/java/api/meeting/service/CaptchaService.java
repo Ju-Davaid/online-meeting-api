@@ -32,5 +32,5 @@ public interface CaptchaService {
      * @param captcha   验证码
      * @return 是否验证成功
      */
-    boolean verifyCaptcha(String captchaId, Integer captcha);
+    boolean verifyCaptcha(String captchaId, String captcha);
 }
