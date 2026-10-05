@@ -4,7 +4,7 @@ import api.meeting.entity.dto.UserLoginDTO;
 import api.meeting.entity.dto.UserRegisterDTO;
 import api.meeting.entity.enums.ResponseCode;
 import api.meeting.entity.po.User;
-import api.meeting.entity.vo.CaptchaVo;
+import api.meeting.entity.vo.CaptchaVO;
 import api.meeting.entity.vo.ResponseVO;
 import api.meeting.entity.vo.UserLoginVO;
 import api.meeting.exception.BusinessException;
@@ -40,8 +40,8 @@ public class AccountController {
      * @return 验证码VO
      */
     @GetMapping("/captcha")
-    public ResponseVO<CaptchaVo> captcha(@RequestParam(defaultValue = "200") Integer width, @RequestParam(defaultValue = "100") Integer height) {
-        CaptchaVo captchaVo = captchaService.getCaptcha(width, height);
+    public ResponseVO<CaptchaVO> captcha(@RequestParam(defaultValue = "200") Integer width, @RequestParam(defaultValue = "100") Integer height) {
+        CaptchaVO captchaVo = captchaService.getCaptcha(width, height);
         return ResponseVO.success("验证码已生成", captchaVo);
     }
 
@@ -54,9 +54,9 @@ public class AccountController {
      * @return 验证码VO
      */
     @GetMapping("/captcha/refresh")
-    public ResponseVO<CaptchaVo> refreshCaptcha(@NotBlank(message = "验证码id不能为空") @RequestParam("id") String id, @RequestParam(defaultValue = "200") Integer width, @RequestParam(defaultValue = "100") Integer height) {
+    public ResponseVO<CaptchaVO> refreshCaptcha(@NotBlank(message = "验证码id不能为空") @RequestParam("id") String id, @RequestParam(defaultValue = "200") Integer width, @RequestParam(defaultValue = "100") Integer height) {
         log.info("刷新验证码，id：{}，width：{}，height：{}", id, width, height);
-        CaptchaVo captchaVo = captchaService.refreshCaptcha(id, width, height);
+        CaptchaVO captchaVo = captchaService.refreshCaptcha(id, width, height);
         return ResponseVO.success("验证码已刷新", captchaVo);
     }
 

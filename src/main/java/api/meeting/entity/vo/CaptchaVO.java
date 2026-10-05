@@ -6,7 +6,7 @@ import lombok.Data;
  * 验证码VO
  */
 @Data
-public class CaptchaVo {
+public class CaptchaVO {
     private String id;
     private String image;
 }
