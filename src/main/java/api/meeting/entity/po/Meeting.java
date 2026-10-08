@@ -1,7 +1,7 @@
 package api.meeting.entity.po;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.util.Date;
@@ -13,12 +13,15 @@ import java.util.Date;
 public class Meeting {
     @TableId
     String id;
-    String number;
-    Date createTime;
+    String meetingNo;
+    String meetingName;
+    Date createdTime;
     String createdUserId;
     Integer joinType;
     String joinPassword;
     Date startTime;
     Date endTime;
     Integer status;
+    @TableField(exist = false)
+    Integer memberCount;
 }

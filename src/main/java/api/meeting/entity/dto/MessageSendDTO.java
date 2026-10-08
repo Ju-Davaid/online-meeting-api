@@ -6,6 +6,10 @@ import lombok.Data;
 
 import java.util.Date;
 
+/**
+ * 消息发送DTO
+ * @param <T> 消息内容类型
+ */
 @Data
 public class MessageSendDTO<T> {
     private Integer messageSendType;
