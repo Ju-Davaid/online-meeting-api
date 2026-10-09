@@ -15,6 +15,11 @@ public class RedisCacheKey {
      * 格式：blacklist:token:userId
      */
     private static final String BLACKLIST_TOKEN = "blacklist:token:%s";
+    /**
+     * 会议房间缓存键
+     * 格式：meeting:room:会议Id
+     */
+    private static final String MEETING_ROOM_KEY = "meeting:room:%s";
 
     /**
      * 获取验证码缓存键
@@ -34,5 +39,15 @@ public class RedisCacheKey {
      */
     public static String getBlacklistTokenKey(String userId) {
         return String.format(BLACKLIST_TOKEN, userId);
+    }
+
+    /**
+     * 获取会议房间缓存键
+     *
+     * @param meetingId 会议ID
+     * @return 会议房间缓存键
+     */
+    public static String getMeetingRoomKey(String meetingId) {
+        return String.format(MEETING_ROOM_KEY, meetingId);
     }
 }
