@@ -60,8 +60,8 @@ public class RedisUtils<V> {
         redisTemplate.opsForHash().put(key, hashKey, value);
     }
 
-    public Object hGet(String key, String hashKey) {
-        return redisTemplate.opsForHash().get(key, hashKey);
+    public V hGet(String key, String hashKey) {
+        return (V) redisTemplate.opsForHash().get(key, hashKey);
     }
 
     public Map<Object, Object> hGetAll(String key) {
@@ -76,8 +76,9 @@ public class RedisUtils<V> {
         return redisTemplate.opsForHash().keys(key);
     }
 
-    public List<Object> hValues(String key) {
-        return redisTemplate.opsForHash().values(key);
+    @SuppressWarnings("unchecked")
+    public List<V> hValues(String key) {
+        return (List<V>) redisTemplate.opsForHash().values(key);
     }
 
     public void hDel(String key, Object... hashKeys) {

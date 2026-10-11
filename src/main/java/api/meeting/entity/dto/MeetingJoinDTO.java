@@ -1,6 +1,5 @@
 package api.meeting.entity.dto;
 
-import api.meeting.entity.po.MeetingMember;
 import lombok.Data;
 
 import java.util.List;
@@ -10,6 +9,6 @@ import java.util.List;
  */
 @Data
 public class MeetingJoinDTO {
-    private MeetingMember newMember;
-    private List<MeetingMember> memberList;
+    private MeetingMemberDTO newMember;
+    private List<MeetingMemberDTO> memberList;
 }

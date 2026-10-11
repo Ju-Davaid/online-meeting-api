@@ -1,10 +1,7 @@
 package api.meeting.service.impl;
 
 import api.meeting.constant.RedisCacheKey;
-import api.meeting.entity.dto.MeetingJoinDTO;
-import api.meeting.entity.dto.MeetingMemberDTO;
-import api.meeting.entity.dto.MessageSendDTO;
-import api.meeting.entity.dto.QuickMeetingDTO;
+import api.meeting.entity.dto.*;
 import api.meeting.entity.enums.*;
 import api.meeting.entity.po.Meeting;
 import api.meeting.entity.po.MeetingMember;
@@ -81,7 +78,6 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void joinMeeting(boolean videoOpen) {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (user != null && user.getMeetingId() == null) {
@@ -92,20 +88,54 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
             throw new BusinessException(ResponseCode.ILLEGAL_PARAM);
         }
         // 校验用户
-        checkMemberJoin(meeting.getId(), user.getId());
+        this.checkMeetingJoin(meeting.getId(), user.getId());
         // 加入成员
         MeetingMemberType memberType = meeting.getCreatedUserId().equals(user.getId()) ? MeetingMemberType.HOST : MeetingMemberType.NORMAL;
-        addMeetingMember(meeting.getId(), user.getId(), user.getUsername(), memberType.getCode());
+        this.addMeetingMember(meeting.getId(), user.getId(), user.getUsername(), memberType.getCode());
         // 加入会议
         this.addToMeeting(meeting.getId(), user.getId(), user.getUsername(), user.getGender(), memberType.getCode(), videoOpen);
         // 加入ws房间
         channelContextUtil.addMeetingRoom(meeting.getId(), user.getId());
         // 发送加入会议消息
         MeetingJoinDTO joinDTO = new MeetingJoinDTO();
-        MeetingMember newMember = (MeetingMember) redisUtils.hGet(RedisCacheKey.getMeetingRoomKey(meeting.getId()), user.getId());
+        MeetingMemberDTO newMember = redisUtils.hGet(RedisCacheKey.getMeetingRoomKey(meeting.getId()), user.getId());
         joinDTO.setNewMember(newMember);
-        List<MeetingMember> memberList = redisUtils.hValues(RedisCacheKey.getMeetingRoomKey(meeting.getId()));
+        List<MeetingMemberDTO> memberList = redisUtils.hValues(RedisCacheKey.getMeetingRoomKey(meeting.getId()));
         joinDTO.setMemberList(memberList);
+        MessageSendDTO<MeetingJoinDTO> messageSendDTO = new MessageSendDTO<>();
+        messageSendDTO.setMessageSendType(MessageSendType.GROUP.getCode());
+        messageSendDTO.setMessageType(MessageType.JOIN.getCode());
+        messageSendDTO.setMeetingId(meeting.getId());
+        messageSendDTO.setMessageContent(joinDTO);
+        channelContextUtil.sendMessage(messageSendDTO);
+
+    }
+
+    @Override
+    public String preJoinMeeting(PreJoinMeetingDTO preJoinMeetingDTO) {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        List<Meeting> meetingList = meetingMapper.selectList(new LambdaQueryWrapper<Meeting>()
+                .eq(Meeting::getMeetingNo, preJoinMeetingDTO.getMeetingNo())
+                .eq(Meeting::getStatus, MeetingStatus.RUNNING.getCode())
+                .orderByDesc(Meeting::getCreatedTime)
+        );
+        if (meetingList.isEmpty()) {
+            throw new BusinessException("会议不存在");
+        }
+        Meeting meeting = meetingList.get(0);
+        if (!meeting.getStatus().equals(MeetingStatus.RUNNING.getCode())) {
+            throw new BusinessException("会议已结束");
+        }
+        if (!meeting.getId().equals(user.getMeetingId())) {
+            throw new BusinessException("您有未结束的会议，不能加入加入其他会议");
+        }
+        this.checkMeetingJoin(meeting.getId(), user.getId());
+        if (meeting.getJoinType().equals(MeetingJoinType.PASSWORD.getCode()) && !Objects.equals(meeting.getJoinPassword(), preJoinMeetingDTO.getJoinPassword())) {
+            throw new BusinessException("密码错误");
+        }
+        user.setMeetingId(meeting.getId());
+        userMapper.updateById(user);
+        return meeting.getId();
     }
 
     /**
@@ -117,15 +147,23 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
      * @param memberType 会员类型
      */
     private void addMeetingMember(String meetingId, String userId, String nickName, Integer memberType) {
-        MeetingMember meetingMember = new MeetingMember();
-        meetingMember.setMeetingId(meetingId);
-        meetingMember.setUserId(userId);
-        meetingMember.setNickname(nickName);
-        meetingMember.setMemberType(memberType);
-        meetingMember.setLastJoinDate(new Date());
-        meetingMember.setStatus(MeetingMemberStatus.NORMAL.getCode());
-        meetingMember.setMeetingStatus(MeetingStatus.RUNNING.getCode());
-        meetingMemberMapper.insertOrUpdate(meetingMember);
+        MeetingMember meetingMember = meetingMemberMapper.selectOne(new LambdaQueryWrapper<MeetingMember>()
+                .eq(MeetingMember::getMeetingId, meetingId)
+                .eq(MeetingMember::getUserId, userId));
+        if (meetingMember == null) {
+            meetingMember = new MeetingMember();
+            meetingMember.setMeetingId(meetingId);
+            meetingMember.setUserId(userId);
+            meetingMember.setNickname(nickName);
+            meetingMember.setMemberType(memberType);
+            meetingMember.setLastJoinTime(new Date());
+            meetingMember.setStatus(MeetingMemberStatus.NORMAL.getCode());
+            meetingMember.setMeetingStatus(MeetingStatus.RUNNING.getCode());
+            meetingMemberMapper.insert(meetingMember);
+        } else {
+            meetingMember.setLastJoinTime(new Date());
+            meetingMemberMapper.updateById(meetingMember);
+        }
     }
 
     /**
@@ -156,8 +194,8 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
      * @param meetingId 会议ID
      * @param userId    用户ID
      */
-    private void checkMemberJoin(String meetingId, String userId) {
-        MeetingMemberDTO meetingMemberDTO = (MeetingMemberDTO) redisUtils.hGet(RedisCacheKey.getMeetingRoomKey(meetingId), userId);
+    private void checkMeetingJoin(String meetingId, String userId) {
+        MeetingMemberDTO meetingMemberDTO = redisUtils.hGet(RedisCacheKey.getMeetingRoomKey(meetingId), userId);
         if (meetingMemberDTO != null && MeetingMemberStatus.BLACKLISTED.getCode().equals(meetingMemberDTO.getStatus())) {
             throw new BusinessException("用户已经被拉黑，不能加入会议");
         }

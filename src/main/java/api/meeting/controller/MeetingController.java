@@ -1,5 +1,6 @@
 package api.meeting.controller;
 
+import api.meeting.entity.dto.PreJoinMeetingDTO;
 import api.meeting.entity.dto.QuickMeetingDTO;
 import api.meeting.entity.po.Meeting;
 import api.meeting.entity.vo.PageVO;
@@ -47,7 +48,19 @@ public class MeetingController {
     }
 
     /**
-     * 加入会议
+     * 预加入会议
+     *
+     * @param preJoinMeetingDTO 预加入会议DTO
+     * @return 预加入会议成功
+     */
+    @PostMapping("/preJoin")
+    public ResponseVO<?> preJoinMeeting(@Validated @RequestBody PreJoinMeetingDTO preJoinMeetingDTO) {
+        preJoinMeetingDTO.setMeetingNo(preJoinMeetingDTO.getMeetingNo().replace(" ", ""));
+        return ResponseVO.success("预加入会议成功", meetingService.preJoinMeeting(preJoinMeetingDTO));
+    }
+
+    /**
+     * 加入会议 (进入会议)
      *
      * @param videoOpen 是否开启视频
      * @return 加入会议成功

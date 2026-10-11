@@ -1,8 +1,14 @@
 server:
   port: 8080
+# 消息队列配置
+message:
+  mq: redis
+# websocket 配置
 ws:
   port: 8081
 spring:
+  jackson:
+    time-zone: Asia/Shanghai
   application:
     name: MeetingApi
   datasource:
@@ -22,6 +28,7 @@ spring:
       connection-timeout: 30000
       connection-test-query: SELECT 1
   data:
+    # redis 配置
     redis:
       database: 0
       host: localhost
@@ -35,6 +42,7 @@ spring:
       connect-timeout: 2000
       timeout: 2000
       password: 123456
+  # rabbitmq 配置
   rabbitmq:
     host: localhost
     port: 5672
@@ -51,7 +59,7 @@ spring:
         prefetch: 1                     # 一次拿1条消息，防止消息堆积
         concurrency: 2                  # 消费线程数
         max-concurrency: 4
-
+# mybatis-plus 配置
 mybatis‑plus:
   # mapper xml 文件位置
   mapper‑locations: classpath:mapper/**/*.xml
@@ -59,8 +67,7 @@ mybatis‑plus:
   type‑aliases‑package: api.meeting.entity.po
   configuration:
     # 打印sql日志
-    #    log‑impl: org.apache.ibatis.logging.stdout.StdOutImpl
-    # 开启驼峰命名转换：user_name → userName
+    log‑impl: org.apache.ibatis.logging.stdout.StdOutImpl
     map‑underscore‑to‑camel‑case: true
   global‑config:
     db‑config:

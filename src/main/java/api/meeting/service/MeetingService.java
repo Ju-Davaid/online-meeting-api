@@ -1,5 +1,6 @@
 package api.meeting.service;
 
+import api.meeting.entity.dto.PreJoinMeetingDTO;
 import api.meeting.entity.dto.QuickMeetingDTO;
 import api.meeting.entity.po.Meeting;
 import api.meeting.entity.vo.PageVO;
@@ -33,4 +34,12 @@ public interface MeetingService extends IService<Meeting> {
      * @param videoOpen 是否开启视频
      */
     void joinMeeting(boolean videoOpen);
+
+    /**
+     * 预加入会议
+     *
+     * @param preJoinMeetingDTO 预加入会议DTO
+     * @return 会议ID
+     */
+    String preJoinMeeting(PreJoinMeetingDTO preJoinMeetingDTO);
 }

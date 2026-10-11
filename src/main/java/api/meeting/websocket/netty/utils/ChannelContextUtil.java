@@ -1,7 +1,7 @@
 package api.meeting.websocket.netty.utils;
 
 import api.meeting.entity.dto.MessageSendDTO;
-import api.meeting.entity.enums.MessageType;
+import api.meeting.entity.enums.MessageSendType;
 import api.meeting.entity.po.User;
 import api.meeting.service.UserService;
 import cn.hutool.core.util.StrUtil;
@@ -13,7 +13,6 @@ import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -110,7 +109,7 @@ public class ChannelContextUtil {
      * @param messageSendDTO 消息发送DTO
      */
     public void sendMessage(MessageSendDTO<?> messageSendDTO) {
-        if (MessageType.isUser(messageSendDTO.getMessageType())) {
+        if (MessageSendType.isUser(messageSendDTO.getMessageType())) {
             sendMessageForUser(messageSendDTO);
         } else {
             sendMessageForGroup(messageSendDTO);

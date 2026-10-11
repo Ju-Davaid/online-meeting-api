@@ -9,13 +9,10 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum MessageType {
-    USER(0, "个人"),
-    SYSTEM(1, "群组");
+    JOIN(1, "加入会议"),
+    NORMAL(2, "普通消息"),
+    LEAVE(3, "退出会议");
 
     private final Integer code;
     private final String desc;
-
-    public static boolean isUser(Integer messageType) {
-        return USER.getCode().equals(messageType);
-    }
 }

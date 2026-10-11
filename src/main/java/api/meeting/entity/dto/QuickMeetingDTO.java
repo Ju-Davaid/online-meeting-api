@@ -10,8 +10,7 @@ import lombok.Data;
  */
 @Data
 public class QuickMeetingDTO {
-    @NotNull(message = "会议编号类型不能为空")
-    private Integer meetingNoType;
+    private Integer meetingNo;
     @NotEmpty(message = "会议名称不能为空")
     @Size(max = 100, message = "会议名称最多100个字符")
     private String meetingName;
