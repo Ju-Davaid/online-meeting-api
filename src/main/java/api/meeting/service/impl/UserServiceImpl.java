@@ -15,14 +15,17 @@ import api.meeting.service.CaptchaService;
 import api.meeting.service.UserService;
 import api.meeting.utils.JwtTokenUtils;
 import api.meeting.utils.RedisUtils;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -30,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * 用户服务实现类
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
@@ -75,11 +79,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!StringUtils.hasText(dto.getUsername()) && !StringUtils.hasText(dto.getEmail())) {
             throw new BusinessException("用户名或邮箱不能为空");
         }
-        User user = userMapper.
-                selectOne(new LambdaQueryWrapper<User>()
-                        .eq(User::getUsername, dto.getUsername())
-                        .or()
-                        .eq(User::getEmail, dto.getEmail()));
+        User user = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getUsername, dto.getUsername()).or().eq(User::getEmail, dto.getEmail()));
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
@@ -129,5 +129,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         long restTime = payload.getExpiresAt().getTime() - now.getTime();
         redisUtils.set(RedisCacheKey.getBlacklistTokenKey(payload.getUserId()), user.getToken(), restTime, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public User getById(String userId) {
+        try {
+            User user = null;
+            if (StringUtils.hasText(redisUtils.get(RedisCacheKey.getUserKey(userId)))) {
+                user = JSONUtil.toBean(redisUtils.get(RedisCacheKey.getUserKey(userId)), User.class);
+            }
+            log.info("cache user: {}", user);
+            if (user == null) {
+                user = super.getById(userId);
+                log.info("db user: {}", user);
+                redisUtils.set(RedisCacheKey.getUserKey(userId), JSONUtil.toJsonStr(user), 10, TimeUnit.MINUTES);
+            }
+            return user;
+        } catch (Exception e) {
+            log.error("get user by userId {} error", userId, e);
+            return null;
+        }
     }
 }

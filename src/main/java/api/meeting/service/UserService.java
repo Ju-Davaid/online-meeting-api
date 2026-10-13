@@ -30,4 +30,12 @@ public interface UserService extends IService<User> {
      * @param user 用户实体
      */
     void logout(User user);
+
+    /**
+     * 根据用户ID获取用户信息
+     *
+     * @param userId 用户ID
+     * @return 用户实体
+     */
+    User getById(String userId);
 }
