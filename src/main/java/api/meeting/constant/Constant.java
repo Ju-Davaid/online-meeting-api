@@ -16,4 +16,12 @@ public class Constant {
      * websocket token 会话键
      */
     public static final String WEBSOCKET_TOKEN_KEY = "token";
+    /**
+     * 消息队列键
+     */
+    public static final String MESSAGE_QUEUE_KEY = "message.queue";
+    /**
+     * redis 消息队列键
+     */
+    public static final String REDIS_MESSAGE_QUEUE = "redis";
 }

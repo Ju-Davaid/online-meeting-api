@@ -1,5 +1,6 @@
 package api.meeting.websocket;
 
+import api.meeting.websocket.message.MessageHandlerForRedis;
 import api.meeting.websocket.netty.NettyWebSocketStarter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,9 +17,11 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class InitializeWebSocketRunner implements ApplicationRunner {
     private final NettyWebSocketStarter webSocketStarter;
+    private final MessageHandlerForRedis messageHandlerForRedis;
 
     @Override
     public void run(@NonNull ApplicationArguments args) {
-        new Thread(webSocketStarter).start();
+        new Thread(webSocketStarter,"websocket-starter").start();
+        new Thread(messageHandlerForRedis::listenMessage,"message-handler").start();
     }
 }

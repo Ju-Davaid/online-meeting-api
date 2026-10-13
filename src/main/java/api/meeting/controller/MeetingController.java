@@ -1,11 +1,13 @@
 package api.meeting.controller;
 
+import api.meeting.entity.dto.MessageSendDTO;
 import api.meeting.entity.dto.PreJoinMeetingDTO;
 import api.meeting.entity.dto.QuickMeetingDTO;
 import api.meeting.entity.po.Meeting;
 import api.meeting.entity.vo.PageVO;
 import api.meeting.entity.vo.ResponseVO;
 import api.meeting.service.MeetingService;
+import api.meeting.websocket.message.MessageHandlerForRedis;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class MeetingController {
     private final MeetingService meetingService;
+    private final MessageHandlerForRedis messageHandlerForRedis;
 
     /**
      * 获取会议列表
@@ -69,5 +72,13 @@ public class MeetingController {
     public ResponseVO<?> joinMeeting(@NotNull(message = "是否开启视频不能为空") @RequestParam Boolean videoOpen) {
         meetingService.joinMeeting(videoOpen);
         return ResponseVO.success("加入会议成功");
+    }
+
+    @GetMapping("/testSendMessage")
+    public ResponseVO<?> testSendMessage() {
+        MessageSendDTO<String> messageSendDTO = new MessageSendDTO<>();
+        messageSendDTO.setMessageContent("测试消息");
+        messageHandlerForRedis.sendMessage(messageSendDTO);
+        return ResponseVO.success("测试发送消息成功");
     }
 }
