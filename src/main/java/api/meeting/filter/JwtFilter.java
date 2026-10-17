@@ -8,6 +8,7 @@ import api.meeting.entity.po.User;
 import api.meeting.service.UserService;
 import api.meeting.utils.JwtTokenUtils;
 import api.meeting.utils.ResponseUtils;
+import cn.hutool.core.text.AntPathMatcher;
 import cn.hutool.json.JSONUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,6 +37,7 @@ import java.util.List;
 public class JwtFilter extends OncePerRequestFilter {
     private final JwtTokenUtils jwtTokenUtils;
     private final UserService userService;
+    private final AntPathMatcher antPathMatcher;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws IOException {
@@ -98,7 +100,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
-        return Arrays.stream(SecurityConfig.PUBLIC_PATH).anyMatch(path -> request.getRequestURI().startsWith(path));
+        return Arrays.stream(SecurityConfig.PUBLIC_PATH).anyMatch(path -> antPathMatcher.match(path, request.getServletPath()));
     }
 
     /**
