@@ -1,8 +1,8 @@
 package api.meeting.constant;
 
-import api.meeting.utils.JwtTokenUtils;
-import io.netty.util.AttributeKey;
-
+/**
+ * 常量类
+ */
 public class Constant {
     /**
      * 验证码过期时间（秒）
@@ -24,4 +24,17 @@ public class Constant {
      * redis 消息队列键
      */
     public static final String REDIS_MESSAGE_QUEUE = "redis";
+    /**
+     * rabbitmq 消息队列键
+     */
+    public static final String RABBITMQ_MESSAGE_QUEUE = "rabbitmq";
+    /**
+     * 消息重试次数键
+     */
+    public static final String MESSAGE_RETRY_COUNT_KEY = "message-retry-count";
+    /**
+     * 最大消息重试次数
+     */
+    public static final Integer MAX_MESSAGE_RETRY_COUNT = 3;
+
 }

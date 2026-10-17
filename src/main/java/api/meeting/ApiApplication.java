@@ -3,6 +3,7 @@ package api.meeting;
 import api.meeting.config.JwtConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -14,6 +15,7 @@ import java.util.Date;
 
 @Slf4j
 @EnableAsync
+@EnableRabbit
 @EnableScheduling
 @SpringBootApplication
 @EnableTransactionManagement

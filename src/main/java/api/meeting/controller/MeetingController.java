@@ -7,6 +7,7 @@ import api.meeting.entity.po.Meeting;
 import api.meeting.entity.vo.PageVO;
 import api.meeting.entity.vo.ResponseVO;
 import api.meeting.service.MeetingService;
+import api.meeting.websocket.message.MessageHandler;
 import api.meeting.websocket.message.MessageHandlerForRedis;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class MeetingController {
     private final MeetingService meetingService;
-    private final MessageHandlerForRedis messageHandlerForRedis;
+    private final MessageHandler messageHandler;
 
     /**
      * 获取会议列表
@@ -78,7 +79,7 @@ public class MeetingController {
     public ResponseVO<?> testSendMessage() {
         MessageSendDTO<String> messageSendDTO = new MessageSendDTO<>();
         messageSendDTO.setMessageContent("测试消息");
-        messageHandlerForRedis.sendMessage(messageSendDTO);
+        messageHandler.sendMessage(messageSendDTO);
         return ResponseVO.success("测试发送消息成功");
     }
 }

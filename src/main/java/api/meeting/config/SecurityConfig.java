@@ -24,6 +24,7 @@ public class SecurityConfig {
             "/captcha/refresh",
             "/register",
             "/login",
+            "/meeting/testSendMessage"
     };
 
     @Bean

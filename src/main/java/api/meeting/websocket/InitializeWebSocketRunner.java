@@ -9,19 +9,21 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 /**
  * WebSocket初始化
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class InitializeWebSocketRunner implements ApplicationRunner {
     private final NettyWebSocketStarter webSocketStarter;
-    private final MessageHandlerForRedis messageHandlerForRedis;
+    private final Optional<MessageHandlerForRedis> messageHandlerForRedis;
 
     @Override
     public void run(@NonNull ApplicationArguments args) {
-        new Thread(webSocketStarter,"websocket-starter").start();
-        new Thread(messageHandlerForRedis::listenMessage,"message-handler").start();
+        new Thread(webSocketStarter, "websocket-starter").start();
+        messageHandlerForRedis.ifPresent(handlerForRedis -> new Thread(handlerForRedis::listenMessage, "message-handler").start());
     }
 }

@@ -13,6 +13,7 @@ import api.meeting.mapper.MeetingMemberMapper;
 import api.meeting.mapper.UserMapper;
 import api.meeting.service.MeetingService;
 import api.meeting.utils.RedisUtils;
+import api.meeting.websocket.message.MessageHandler;
 import api.meeting.websocket.netty.utils.ChannelContextUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -38,6 +39,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
     private final UserMapper userMapper;
     private final MeetingMemberMapper meetingMemberMapper;
     private final ChannelContextUtil channelContextUtil;
+    private final MessageHandler messageHandler;
     private final RedisUtils<MeetingMemberDTO> redisUtils;
 
     @Override
@@ -107,8 +109,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
         messageSendDTO.setMessageType(MessageType.JOIN.getCode());
         messageSendDTO.setMeetingId(meeting.getId());
         messageSendDTO.setMessageContent(joinDTO);
-        channelContextUtil.sendMessage(messageSendDTO);
-
+        messageHandler.sendMessage(messageSendDTO);
     }
 
     @Override

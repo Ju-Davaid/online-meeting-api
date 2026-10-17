@@ -1,8 +1,9 @@
 server:
   port: 8080
-# 消息队列配置
+# 消息队列的使用 选择 redis 或 rabbitmq
 message:
-  queue: redis
+  #  queue: redis
+  queue: rabbitmq
 # websocket 配置
 ws:
   port: 8081
