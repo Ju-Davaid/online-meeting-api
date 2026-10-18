@@ -36,5 +36,12 @@ public class Constant {
      * 最大消息重试次数
      */
     public static final Integer MAX_MESSAGE_RETRY_COUNT = 3;
-
+    /**
+     * 心跳消息键
+     */
+    public static final String PING = "PING";
+    /**
+     * 心跳响应消息键
+     */
+    public static final String PONG = "PONG";
 }

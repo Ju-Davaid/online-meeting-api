@@ -23,7 +23,7 @@ public class InitializeWebSocketRunner implements ApplicationRunner {
 
     @Override
     public void run(@NonNull ApplicationArguments args) {
-        new Thread(webSocketStarter, "websocket-starter").start();
+        new Thread(webSocketStarter, "socket-starter").start();
         messageHandlerForRedis.ifPresent(handlerForRedis -> new Thread(handlerForRedis::listenMessage, "message-handler").start());
     }
 }

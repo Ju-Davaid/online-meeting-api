@@ -2,7 +2,6 @@ package api.meeting.utils;
 
 import api.meeting.config.JwtConfig;
 import api.meeting.constant.RedisCacheKey;
-import cn.hutool.core.text.AntPathMatcher;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.jwt.JWT;
@@ -11,7 +10,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -131,10 +129,5 @@ public class JwtTokenUtils {
             return null;
         }
         return payload;
-    }
-
-    @Bean
-    public AntPathMatcher antPathMatcher() {
-        return new AntPathMatcher();
     }
 }

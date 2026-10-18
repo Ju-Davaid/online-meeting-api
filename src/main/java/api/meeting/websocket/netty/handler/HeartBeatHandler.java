@@ -3,8 +3,8 @@ package api.meeting.websocket.netty.handler;
 import api.meeting.constant.Constant;
 import api.meeting.utils.JwtTokenUtils;
 import api.meeting.websocket.netty.utils.ChannelContextUtil;
-import cn.hutool.json.JSONUtil;
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ChannelHandler.Sharable
 public class HeartBeatHandler extends ChannelDuplexHandler {
     private final ChannelContextUtil channelContextUtil;
 
@@ -31,7 +32,7 @@ public class HeartBeatHandler extends ChannelDuplexHandler {
                     log.info("用户{}心跳超时", payload.getUsername());
                     ctx.close();
                 }
-                case WRITER_IDLE -> ctx.writeAndFlush("hear");
+                case WRITER_IDLE -> ctx.writeAndFlush(Constant.PONG);
             }
         }
     }
