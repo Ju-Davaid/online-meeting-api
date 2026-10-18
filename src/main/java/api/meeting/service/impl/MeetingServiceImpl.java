@@ -12,6 +12,7 @@ import api.meeting.mapper.MeetingMapper;
 import api.meeting.mapper.MeetingMemberMapper;
 import api.meeting.mapper.UserMapper;
 import api.meeting.service.MeetingService;
+import api.meeting.service.UserService;
 import api.meeting.utils.RedisUtils;
 import api.meeting.websocket.message.MessageHandler;
 import api.meeting.websocket.netty.utils.ChannelContextUtil;
@@ -36,7 +37,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> implements MeetingService {
     private final MeetingMapper meetingMapper;
-    private final UserMapper userMapper;
+    private final UserService userService;
     private final MeetingMemberMapper meetingMemberMapper;
     private final ChannelContextUtil channelContextUtil;
     private final MessageHandler messageHandler;
@@ -76,7 +77,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
         meeting.setStatus(MeetingStatus.RUNNING.getCode());
         meetingMapper.insert(meeting);
         user.setMeetingId(meeting.getId());
-        userMapper.updateById(user);
+        userService.updateById(user);
     }
 
     @Override
@@ -135,7 +136,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
             throw new BusinessException("密码错误");
         }
         user.setMeetingId(meeting.getId());
-        userMapper.updateById(user);
+        userService.updateById(user);
         return meeting.getId();
     }
 

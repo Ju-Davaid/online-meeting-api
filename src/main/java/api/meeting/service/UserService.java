@@ -38,4 +38,12 @@ public interface UserService extends IService<User> {
      * @return 用户实体
      */
     User getById(String userId);
+
+    /**
+     * 更新用户信息
+     *
+     * @param user 用户实体
+     * @return 是否更新成功
+     */
+    boolean updateById(User user);
 }

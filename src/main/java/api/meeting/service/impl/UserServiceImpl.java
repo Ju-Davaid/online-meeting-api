@@ -87,7 +87,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException("用户已在其他设备登录");
         }
         user.setLastLoginTime(now);
-        userMapper.updateById(user);
+        this.updateById(user);
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             throw new BusinessException("密码错误");
         }
@@ -122,7 +122,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         Date now = new Date();
         user.setLastOffTime(now);
-        userMapper.updateById(user);
+        this.updateById(user);
         if (now.after(payload.getExpiresAt())) {
             throw new BusinessException(ResponseCode.FORBIDDEN);
         }
@@ -148,6 +148,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         } catch (Exception e) {
             log.error("get user by userId {} error", userId, e);
             return null;
+        }
+    }
+
+    @Override
+    public boolean updateById(User user) {
+        try {
+            userMapper.updateById(user);
+            redisUtils.delete(RedisCacheKey.getUserKey(user.getId()));
+            return true;
+        } catch (Exception e) {
+            log.error("update user by userId {} error", user.getId(), e);
+            return false;
         }
     }
 }
