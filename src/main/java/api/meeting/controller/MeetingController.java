@@ -10,6 +10,7 @@ import api.meeting.entity.vo.ResponseVO;
 import api.meeting.service.MeetingService;
 import api.meeting.websocket.message.MessageHandler;
 import api.meeting.websocket.message.MessageHandlerForRedis;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -76,10 +77,48 @@ public class MeetingController {
         return ResponseVO.success("加入会议成功");
     }
 
+    /**
+     * 退出会议
+     *
+     * @return 退出会议成功
+     */
     @GetMapping("/exit")
     public ResponseVO<?> exitMeeting() {
         meetingService.exitMeeting(MeetingMemberStatus.EXIT);
         return ResponseVO.success("退出会议成功");
+    }
+
+    /**
+     * 踢出会议
+     *
+     * @return 踢出会议成功
+     */
+    @GetMapping("/kick")
+    public ResponseVO<?> kickMeeting(@NotEmpty(message = "目标用户ID不能为空") String targetUserId) {
+        meetingService.forceExitMeeting(targetUserId, MeetingMemberStatus.KICKED);
+        return ResponseVO.success("踢出会议成功");
+    }
+
+    /**
+     * 拉黑成员
+     *
+     * @return 拉黑成员成功
+     */
+    @GetMapping("/black")
+    public ResponseVO<?> blacklistMeeting(@NotEmpty(message = "目标用户ID不能为空") String targetUserId) {
+        meetingService.forceExitMeeting(targetUserId, MeetingMemberStatus.BLACKLISTED);
+        return ResponseVO.success("拉黑会议成功");
+    }
+
+    @GetMapping("/end")
+    public ResponseVO<?> endMeeting() {
+        meetingService.endMeeting();
+        return ResponseVO.success("结束会议成功");
+    }
+
+    @GetMapping("/current")
+    public ResponseVO<?> currentMeeting() {
+        return ResponseVO.success("获取当前会议成功", meetingService.getCurrentMeeting());
     }
 
     @GetMapping("/testSendMessage")

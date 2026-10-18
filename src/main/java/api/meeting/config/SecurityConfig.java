@@ -1,6 +1,7 @@
 package api.meeting.config;
 
 import api.meeting.filter.JwtFilter;
+import cn.hutool.core.text.AntPathMatcher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -30,6 +31,11 @@ public class SecurityConfig {
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AntPathMatcher pathMatcher() {
+        return new AntPathMatcher();
     }
 
     @Bean

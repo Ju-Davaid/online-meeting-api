@@ -133,6 +133,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void exitMeeting(MeetingMemberStatus status) {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String meetingId = user.getMeetingId();
@@ -169,7 +170,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
         List<MeetingMemberDTO> onlineMemberDTOList = memberList.stream().filter(member -> member.getStatus().equals(MeetingMemberStatus.NORMAL.getCode())).toList();
 
         if (onlineMemberDTOList.isEmpty()) {
-            // TODO 结束会议
+            endMeeting();
             return;
         }
         // 如果退出用户是拉黑或踢出状态，更新
@@ -180,6 +181,67 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
                     .eq(MeetingMember::getMeetingId, meetingId)
                     .eq(MeetingMember::getUserId, userId));
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void forceExitMeeting(String targetUserId, MeetingMemberStatus status) {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (targetUserId.equals(user.getId())) return;
+        Meeting meeting = meetingMapper.selectById(user.getMeetingId());
+        if (meeting != null && !meeting.getCreatedUserId().equals(user.getId())) {
+            throw new BusinessException(ResponseCode.FORBIDDEN);
+        }
+        exitMeeting(status);
+    }
+
+    @Override
+    public Meeting getCurrentMeeting() {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Meeting meeting = meetingMapper.selectById(user.getMeetingId());
+        if (meeting != null && meeting.getStatus().equals(MeetingStatus.RUNNING.getCode())) {
+            return meeting;
+        }
+        return null;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void endMeeting() {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Meeting meeting = meetingMapper.selectById(user.getMeetingId());
+        if (meeting != null && !meeting.getCreatedUserId().equals(user.getId())) {
+            throw new BusinessException(ResponseCode.FORBIDDEN);
+        }
+        Meeting updateMeeting = new Meeting();
+        updateMeeting.setStatus(MeetingStatus.ENDED.getCode());
+        updateMeeting.setEndTime(new Date());
+        meetingMapper.updateById(updateMeeting);
+        // 发送结束会议消息
+        MessageSendDTO<?> sendDTO = new MessageSendDTO<>();
+        sendDTO.setMessageType(MessageType.END.getCode());
+        sendDTO.setMessageSendType(MessageSendType.GROUP.getCode());
+        sendDTO.setMessageId(meeting.getId());
+        messageHandler.sendMessage(sendDTO);
+        // 更新会议会员状态
+        MeetingMember updateMeetingMember = new MeetingMember();
+        updateMeetingMember.setMeetingStatus(MeetingStatus.ENDED.getCode());
+        meetingMemberMapper.update(updateMeetingMember, new LambdaQueryWrapper<MeetingMember>()
+                .eq(MeetingMember::getMeetingId, meeting.getId()));
+        // TODO 更新预约用户状态
+
+        List<MeetingMemberDTO> meetingMemberDTOList = redisUtils.hValues(RedisCacheKey.getMeetingRoomKey(meeting.getId()));
+        // 更新用户会议ID为null
+        List<String> userIdList = meetingMemberDTOList.stream().map(MeetingMemberDTO::getUserId).toList();
+        List<User> updateUserList = userIdList.stream().map(userId -> {
+            User updateUser = new User();
+            updateUser.setId(userId);
+            updateUser.setMeetingId(null);
+            return user;
+        }).toList();
+        userService.updateBatchById(updateUserList);
+        // 删除会议房间中的用户
+        redisUtils.hDel(RedisCacheKey.getMeetingRoomKey(meeting.getId()), userIdList.toArray());
     }
 
     /**

@@ -156,6 +156,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         try {
             userMapper.updateById(user);
             redisUtils.delete(RedisCacheKey.getUserKey(user.getId()));
+            log.info("update user by userId {} success new data: {}", user.getId(), user);
             return true;
         } catch (Exception e) {
             log.error("update user by userId {} error", user.getId(), e);

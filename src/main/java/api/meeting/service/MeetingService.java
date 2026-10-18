@@ -44,5 +44,30 @@ public interface MeetingService extends IService<Meeting> {
      */
     String preJoinMeeting(PreJoinMeetingDTO preJoinMeetingDTO);
 
+    /**
+     * 退出会议
+     *
+     * @param status 退出成员状态
+     */
     void exitMeeting(MeetingMemberStatus status);
+
+    /**
+     * 强制退出会议
+     *
+     * @param targetUserId 目标用户ID
+     * @param status       退出成员状态
+     */
+    void forceExitMeeting(String targetUserId, MeetingMemberStatus status);
+
+    /**
+     * 获取当前会议
+     *
+     * @return 当前会议
+     */
+    Meeting getCurrentMeeting();
+
+    /**
+     * 结束会议
+     */
+    void endMeeting();
 }
