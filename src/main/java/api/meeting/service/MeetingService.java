@@ -2,6 +2,7 @@ package api.meeting.service;
 
 import api.meeting.entity.dto.PreJoinMeetingDTO;
 import api.meeting.entity.dto.QuickMeetingDTO;
+import api.meeting.entity.enums.MeetingMemberStatus;
 import api.meeting.entity.po.Meeting;
 import api.meeting.entity.vo.PageVO;
 import api.meeting.entity.vo.ResponseVO;
@@ -42,4 +43,6 @@ public interface MeetingService extends IService<Meeting> {
      * @return 会议ID
      */
     String preJoinMeeting(PreJoinMeetingDTO preJoinMeetingDTO);
+
+    void exitMeeting(MeetingMemberStatus status);
 }

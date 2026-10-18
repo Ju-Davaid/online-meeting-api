@@ -3,6 +3,7 @@ package api.meeting.controller;
 import api.meeting.entity.dto.MessageSendDTO;
 import api.meeting.entity.dto.PreJoinMeetingDTO;
 import api.meeting.entity.dto.QuickMeetingDTO;
+import api.meeting.entity.enums.MeetingMemberStatus;
 import api.meeting.entity.po.Meeting;
 import api.meeting.entity.vo.PageVO;
 import api.meeting.entity.vo.ResponseVO;
@@ -73,6 +74,12 @@ public class MeetingController {
     public ResponseVO<?> joinMeeting(@NotNull(message = "是否开启视频不能为空") @RequestParam Boolean videoOpen) {
         meetingService.joinMeeting(videoOpen);
         return ResponseVO.success("加入会议成功");
+    }
+
+    @GetMapping("/exit")
+    public ResponseVO<?> exitMeeting() {
+        meetingService.exitMeeting(MeetingMemberStatus.EXIT);
+        return ResponseVO.success("退出会议成功");
     }
 
     @GetMapping("/testSendMessage")

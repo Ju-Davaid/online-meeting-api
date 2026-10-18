@@ -10,12 +10,12 @@ import api.meeting.entity.vo.PageVO;
 import api.meeting.exception.BusinessException;
 import api.meeting.mapper.MeetingMapper;
 import api.meeting.mapper.MeetingMemberMapper;
-import api.meeting.mapper.UserMapper;
 import api.meeting.service.MeetingService;
 import api.meeting.service.UserService;
 import api.meeting.utils.RedisUtils;
 import api.meeting.websocket.message.MessageHandler;
 import api.meeting.websocket.netty.utils.ChannelContextUtil;
+import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -47,11 +47,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
     public PageVO<Meeting> getMeetingList(Integer pageNum, Integer pageSize) {
         Page<Meeting> page = new Page<>(pageNum, pageSize);
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        IPage<Meeting> meetings = meetingMapper.selectPage(page,
-                new LambdaQueryWrapper<Meeting>()
-                        .eq(Meeting::getCreatedUserId, user.getId())
-                        .eq(Meeting::getStatus, 1)
-                        .orderByDesc(Meeting::getCreatedTime));
+        IPage<Meeting> meetings = meetingMapper.selectPage(page, new LambdaQueryWrapper<Meeting>().eq(Meeting::getCreatedUserId, user.getId()).eq(Meeting::getStatus, 1).orderByDesc(Meeting::getCreatedTime));
         PageVO<Meeting> pageVO = new PageVO<>();
         pageVO.setPageNum(pageNum);
         pageVO.setPageSize(pageSize);
@@ -116,11 +112,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
     @Override
     public String preJoinMeeting(PreJoinMeetingDTO preJoinMeetingDTO) {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        List<Meeting> meetingList = meetingMapper.selectList(new LambdaQueryWrapper<Meeting>()
-                .eq(Meeting::getMeetingNo, preJoinMeetingDTO.getMeetingNo())
-                .eq(Meeting::getStatus, MeetingStatus.RUNNING.getCode())
-                .orderByDesc(Meeting::getCreatedTime)
-        );
+        List<Meeting> meetingList = meetingMapper.selectList(new LambdaQueryWrapper<Meeting>().eq(Meeting::getMeetingNo, preJoinMeetingDTO.getMeetingNo()).eq(Meeting::getStatus, MeetingStatus.RUNNING.getCode()).orderByDesc(Meeting::getCreatedTime));
         if (meetingList.isEmpty()) {
             throw new BusinessException("会议不存在");
         }
@@ -140,6 +132,56 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
         return meeting.getId();
     }
 
+    @Override
+    public void exitMeeting(MeetingMemberStatus status) {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String meetingId = user.getMeetingId();
+        if (meetingId == null) return;
+        String userId = user.getId();
+        MeetingMemberDTO memberDTO = redisUtils.hGet(RedisCacheKey.getMeetingRoomKey(meetingId), userId);
+        if (memberDTO != null) {
+            memberDTO.setStatus(status.getCode());
+            redisUtils.hSet(RedisCacheKey.getMeetingRoomKey(meetingId), userId, memberDTO);
+        } else {
+            user.setMeetingId(null);
+            userService.updateById(user);
+            return;
+        }
+        MessageSendDTO<MeetingExitDTO> sendDTO = new MessageSendDTO<>();
+        sendDTO.setMessageType(MessageType.LEAVE.getCode());
+        user.setMeetingId(null);
+        userService.updateById(user);
+        List<MeetingMemberDTO> memberList = redisUtils.hValues(RedisCacheKey.getMeetingRoomKey(meetingId));
+        // 设置退出会议dto
+        MeetingExitDTO exitDTO = new MeetingExitDTO();
+        exitDTO.setMemberList(memberList);
+        exitDTO.setExitUserId(userId);
+        exitDTO.setExitMeetingStatus(status.getCode());
+        // 设置消息内容
+        sendDTO.setMessageContent(exitDTO);
+        sendDTO.setMeetingId(meetingId);
+        sendDTO.setSendUserId(userId);
+        sendDTO.setSendUserNickname(user.getUsername());
+        sendDTO.setMessageSendType(MessageSendType.GROUP.getCode());
+        sendDTO.setSendTime(new Date());
+        messageHandler.sendMessage(sendDTO);
+        // 在线用户列表
+        List<MeetingMemberDTO> onlineMemberDTOList = memberList.stream().filter(member -> member.getStatus().equals(MeetingMemberStatus.NORMAL.getCode())).toList();
+
+        if (onlineMemberDTOList.isEmpty()) {
+            // TODO 结束会议
+            return;
+        }
+        // 如果退出用户是拉黑或踢出状态，更新
+        if (ArrayUtil.contains(new Integer[]{MeetingMemberStatus.BLACKLISTED.getCode(), MeetingMemberStatus.KICKED.getCode()}, status.getCode())) {
+            MeetingMember meetingMember = new MeetingMember();
+            meetingMember.setStatus(status.getCode());
+            meetingMemberMapper.update(meetingMember, new LambdaQueryWrapper<MeetingMember>()
+                    .eq(MeetingMember::getMeetingId, meetingId)
+                    .eq(MeetingMember::getUserId, userId));
+        }
+    }
+
     /**
      * 加入会议会员
      *
@@ -149,9 +191,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
      * @param memberType 会员类型
      */
     private void addMeetingMember(String meetingId, String userId, String nickName, Integer memberType) {
-        MeetingMember meetingMember = meetingMemberMapper.selectOne(new LambdaQueryWrapper<MeetingMember>()
-                .eq(MeetingMember::getMeetingId, meetingId)
-                .eq(MeetingMember::getUserId, userId));
+        MeetingMember meetingMember = meetingMemberMapper.selectOne(new LambdaQueryWrapper<MeetingMember>().eq(MeetingMember::getMeetingId, meetingId).eq(MeetingMember::getUserId, userId));
         if (meetingMember == null) {
             meetingMember = new MeetingMember();
             meetingMember.setMeetingId(meetingId);

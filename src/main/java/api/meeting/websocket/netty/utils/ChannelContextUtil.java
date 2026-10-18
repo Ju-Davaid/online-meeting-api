@@ -1,9 +1,15 @@
 package api.meeting.websocket.netty.utils;
 
+import api.meeting.constant.RedisCacheKey;
+import api.meeting.entity.dto.MeetingExitDTO;
+import api.meeting.entity.dto.MeetingMemberDTO;
 import api.meeting.entity.dto.MessageSendDTO;
+import api.meeting.entity.enums.MeetingMemberStatus;
 import api.meeting.entity.enums.MessageSendType;
+import api.meeting.entity.enums.MessageType;
 import api.meeting.entity.po.User;
 import api.meeting.service.UserService;
+import api.meeting.utils.RedisUtils;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import io.netty.channel.Channel;
@@ -18,7 +24,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * 通道上下文工具类
@@ -30,6 +38,7 @@ public class ChannelContextUtil {
     public static final ConcurrentHashMap<String, Channel> USER_CONTEXT_MAP = new ConcurrentHashMap<>();
     public static final ConcurrentHashMap<String, ChannelGroup> MEETING_ROOM_CONTEXT_MAP = new ConcurrentHashMap<>();
     private final UserService userService;
+    private final RedisUtils<MeetingMemberDTO> redisUtils;
 
     /**
      * 设置channel属性
@@ -125,6 +134,21 @@ public class ChannelContextUtil {
             return;
         }
         channelGroup.writeAndFlush(new TextWebSocketFrame(JSONUtil.toJsonStr(messageSendDTO)));
+        if (MessageType.LEAVE.getCode().equals(messageSendDTO.getMessageType())) {
+            MeetingExitDTO exitDTO = (MeetingExitDTO) messageSendDTO.getMessageContent();
+            removeContextFromGroup(exitDTO.getExitUserId(), messageSendDTO.getMeetingId());
+            List<MeetingMemberDTO> meetingMemberDTOList = redisUtils.hValues(RedisCacheKey.getMeetingRoomKey(messageSendDTO.getMeetingId()));
+            List<MeetingMemberDTO> onlineMemberDTOList = meetingMemberDTOList.stream().filter(member -> member.getStatus().equals(MeetingMemberStatus.NORMAL.getCode())).toList();
+            if (onlineMemberDTOList.isEmpty()) {
+                removeContextGroup(messageSendDTO.getMeetingId());
+            }
+        } else if (MessageType.END.getCode().equals(messageSendDTO.getMessageType())) {
+            List<MeetingMemberDTO> meetingMemberDTOList = redisUtils.hValues(RedisCacheKey.getMeetingRoomKey(messageSendDTO.getMeetingId()));
+            for (MeetingMemberDTO memberDTO : meetingMemberDTOList) {
+                removeContextFromGroup(memberDTO.getUserId(), messageSendDTO.getMeetingId());
+            }
+            removeContextGroup(messageSendDTO.getMeetingId());
+        }
     }
 
     private void sendMessageForUser(MessageSendDTO<?> messageSendDTO) {
@@ -150,5 +174,26 @@ public class ChannelContextUtil {
         if (channel != null) {
             channel.close();
         }
+    }
+
+    /**
+     * 从会议房间移除用户上下文
+     *
+     * @param userId    用户ID
+     * @param meetingId 会议ID
+     */
+    private void removeContextFromGroup(String userId, String meetingId) {
+        Channel channel = USER_CONTEXT_MAP.get(userId);
+        if (channel == null) {
+            return;
+        }
+        ChannelGroup channelGroup = MEETING_ROOM_CONTEXT_MAP.get(meetingId);
+        if (channelGroup != null) {
+            channelGroup.remove(channel);
+        }
+    }
+
+    private void removeContextGroup(String meetingId) {
+        MEETING_ROOM_CONTEXT_MAP.remove(meetingId);
     }
 }
