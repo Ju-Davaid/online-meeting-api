@@ -12,6 +12,7 @@ import api.meeting.mapper.MeetingMapper;
 import api.meeting.mapper.MeetingMemberMapper;
 import api.meeting.service.MeetingService;
 import api.meeting.service.UserService;
+import api.meeting.utils.JwtTokenUtils;
 import api.meeting.utils.RedisUtils;
 import api.meeting.websocket.message.MessageHandler;
 import api.meeting.websocket.netty.utils.ChannelContextUtil;
@@ -22,7 +23,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,7 +46,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
     @Override
     public PageVO<Meeting> getMeetingList(Integer pageNum, Integer pageSize) {
         Page<Meeting> page = new Page<>(pageNum, pageSize);
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = JwtTokenUtils.getUserInfo();
         IPage<Meeting> meetings = meetingMapper.selectPage(page, new LambdaQueryWrapper<Meeting>().eq(Meeting::getCreatedUserId, user.getId()).eq(Meeting::getStatus, 1).orderByDesc(Meeting::getCreatedTime));
         PageVO<Meeting> pageVO = new PageVO<>();
         pageVO.setPageNum(pageNum);
@@ -59,7 +59,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void quickMeeting(QuickMeetingDTO quickMeetingDTO) {
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = JwtTokenUtils.getUserInfo();
         if (user.getMeetingId() != null) {
             throw new BusinessException("用户已加入会议");
         }
@@ -78,7 +78,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
 
     @Override
     public void joinMeeting(boolean videoOpen) {
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = JwtTokenUtils.getUserInfo();
         if (user != null && user.getMeetingId() == null) {
             throw new BusinessException(ResponseCode.ILLEGAL_PARAM);
         }
@@ -111,7 +111,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
 
     @Override
     public String preJoinMeeting(PreJoinMeetingDTO preJoinMeetingDTO) {
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = JwtTokenUtils.getUserInfo();
         List<Meeting> meetingList = meetingMapper.selectList(new LambdaQueryWrapper<Meeting>().eq(Meeting::getMeetingNo, preJoinMeetingDTO.getMeetingNo()).eq(Meeting::getStatus, MeetingStatus.RUNNING.getCode()).orderByDesc(Meeting::getCreatedTime));
         if (meetingList.isEmpty()) {
             throw new BusinessException("会议不存在");
@@ -135,7 +135,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void exitMeeting(MeetingMemberStatus status) {
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = JwtTokenUtils.getUserInfo();
         String meetingId = user.getMeetingId();
         if (meetingId == null) return;
         String userId = user.getId();
@@ -186,7 +186,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void forceExitMeeting(String targetUserId, MeetingMemberStatus status) {
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = JwtTokenUtils.getUserInfo();
         if (targetUserId.equals(user.getId())) return;
         Meeting meeting = meetingMapper.selectById(user.getMeetingId());
         if (meeting != null && !meeting.getCreatedUserId().equals(user.getId())) {
@@ -197,7 +197,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
 
     @Override
     public Meeting getCurrentMeeting() {
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = JwtTokenUtils.getUserInfo();
         Meeting meeting = meetingMapper.selectById(user.getMeetingId());
         if (meeting != null && meeting.getStatus().equals(MeetingStatus.RUNNING.getCode())) {
             return meeting;
@@ -208,7 +208,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void endMeeting() {
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = JwtTokenUtils.getUserInfo();
         Meeting meeting = meetingMapper.selectById(user.getMeetingId());
         if (meeting != null && !meeting.getCreatedUserId().equals(user.getId())) {
             throw new BusinessException(ResponseCode.FORBIDDEN);
@@ -242,6 +242,17 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
         userService.updateBatchById(updateUserList);
         // 删除会议房间中的用户
         redisUtils.hDel(RedisCacheKey.getMeetingRoomKey(meeting.getId()), userIdList.toArray());
+    }
+
+    @Override
+    public void deleteMeeting() {
+        User user = JwtTokenUtils.getUserInfo();
+        MeetingMember updateMeetingMember = new MeetingMember();
+        updateMeetingMember.setStatus(MeetingMemberStatus.DELETE.getCode());
+        meetingMemberMapper.update(updateMeetingMember, new LambdaQueryWrapper<MeetingMember>()
+                .eq(MeetingMember::getMeetingId, user.getMeetingId())
+                .eq(MeetingMember::getUserId, user.getId())
+        );
     }
 
     /**

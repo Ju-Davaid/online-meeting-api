@@ -9,7 +9,6 @@ import api.meeting.entity.vo.PageVO;
 import api.meeting.entity.vo.ResponseVO;
 import api.meeting.service.MeetingService;
 import api.meeting.websocket.message.MessageHandler;
-import api.meeting.websocket.message.MessageHandlerForRedis;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -119,6 +118,11 @@ public class MeetingController {
     @GetMapping("/current")
     public ResponseVO<?> currentMeeting() {
         return ResponseVO.success("获取当前会议成功", meetingService.getCurrentMeeting());
+    }
+
+    @GetMapping("/delete")
+    public ResponseVO<?> deleteMeeting() {
+        return ResponseVO.success("删除会议成功");
     }
 
     @GetMapping("/testSendMessage")

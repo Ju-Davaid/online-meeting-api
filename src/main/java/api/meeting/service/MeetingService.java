@@ -70,4 +70,9 @@ public interface MeetingService extends IService<Meeting> {
      * 结束会议
      */
     void endMeeting();
+
+    /**
+     * 删除会议
+     */
+    void deleteMeeting();
 }
