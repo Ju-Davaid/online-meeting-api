@@ -178,7 +178,9 @@ public class RedisUtils<V> {
     }
 
     // ====================== 简单分布式锁（非可重入，生产推荐Redisson） ======================
-
+    public Boolean setIfAbsent(String key, V value,long time, TimeUnit unit) {
+        return redisTemplate.opsForValue().setIfAbsent(key, value, time, unit);
+    }
     /**
      * 获取锁
      *

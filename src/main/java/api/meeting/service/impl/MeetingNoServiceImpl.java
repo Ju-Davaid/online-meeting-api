@@ -19,7 +19,7 @@ public class MeetingNoServiceImpl implements MeetingNoService {
     private static final int MAX_RETRY = 10;
 
     @Override
-    public long createUniqueMeetingCode() {
+    public String createUniqueMeetingCode() {
         for (int i = 0; i < MAX_RETRY; i++) {
             long candidate = meetingNOGenerator.generateMeetingCode();
 
@@ -30,7 +30,7 @@ public class MeetingNoServiceImpl implements MeetingNoService {
             );
             if (Boolean.TRUE.equals(success)) {
                 log.info("成功生成会议号：{}", candidate);
-                return candidate;
+                return Long.toString(candidate);
             }
         }
         throw new IllegalStateException("生成会议号失败，重试次数已用完");
