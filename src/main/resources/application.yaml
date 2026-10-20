@@ -1,5 +1,9 @@
 server:
   port: 8080
+meeting:
+  id-generator:
+    worker-id: 1
+    datacenter-id: 1
 # 消息队列的使用 选择 redis 或 rabbitmq
 message:
   queue: redis
