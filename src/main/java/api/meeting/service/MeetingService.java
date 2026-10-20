@@ -78,15 +78,11 @@ public interface MeetingService extends IService<Meeting> {
     /**
      * 删除会议
      */
-    void deleteMeeting();
+    void deleteMeeting(String meetingId);
 
     /**
      * 获取会议成员
      */
-    List<MeetingMember> getMeetingMembers();
+    List<MeetingMember> getMeetingMembers(String meetingId);
 
-    /**
-     * 获取会议预约
-     */
-    List<MeetingReserve> getMeetingReserves();
 }

@@ -5,13 +5,12 @@ import api.meeting.entity.dto.*;
 import api.meeting.entity.enums.*;
 import api.meeting.entity.po.Meeting;
 import api.meeting.entity.po.MeetingMember;
-import api.meeting.entity.po.MeetingReserve;
 import api.meeting.entity.po.User;
 import api.meeting.entity.vo.PageVO;
 import api.meeting.exception.BusinessException;
 import api.meeting.mapper.MeetingMapper;
 import api.meeting.mapper.MeetingMemberMapper;
-import api.meeting.mapper.MeetingReserveMapper;
+import api.meeting.service.MeetingNoService;
 import api.meeting.service.MeetingService;
 import api.meeting.service.UserService;
 import api.meeting.utils.JwtTokenUtils;
@@ -45,7 +44,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
     private final ChannelContextUtil channelContextUtil;
     private final MessageHandler messageHandler;
     private final RedisUtils<MeetingMemberDTO> redisUtils;
-    private final MeetingReserveMapper meetingReserveMapper;
+    private final MeetingNoService meetingNoService;
 
     @Override
     public PageVO<Meeting> getMeetingList(Integer pageNum, Integer pageSize) {
@@ -68,7 +67,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
             throw new BusinessException("用户已加入会议");
         }
         Meeting meeting = new Meeting();
-        meeting.setMeetingNo(RandomUtil.randomNumbers(5));
+        meeting.setMeetingNo(meetingNoService.createUniqueMeetingCode());
         meeting.setMeetingName(quickMeetingDTO.getMeetingName());
         meeting.setJoinType(quickMeetingDTO.getJoinType());
         meeting.setJoinPassword(quickMeetingDTO.getJoinPassword());
@@ -249,33 +248,27 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
     }
 
     @Override
-    public void deleteMeeting() {
+    public void deleteMeeting(String meetingId) {
         User user = JwtTokenUtils.getUserInfo();
         MeetingMember updateMeetingMember = new MeetingMember();
         updateMeetingMember.setStatus(MeetingMemberStatus.DELETE.getCode());
         meetingMemberMapper.update(updateMeetingMember, new LambdaQueryWrapper<MeetingMember>()
-                .eq(MeetingMember::getMeetingId, user.getMeetingId())
+                .eq(MeetingMember::getMeetingId, meetingId)
                 .eq(MeetingMember::getUserId, user.getId())
         );
     }
 
     @Override
-    public List<MeetingMember> getMeetingMembers() {
+    public List<MeetingMember> getMeetingMembers(String meetingId) {
         User user = JwtTokenUtils.getUserInfo();
         List<MeetingMember> memberList = meetingMemberMapper.selectList(new LambdaQueryWrapper<MeetingMember>()
-                .eq(MeetingMember::getMeetingId, user.getMeetingId())
+                .eq(MeetingMember::getMeetingId, meetingId)
         );
         Optional<MeetingMember> meetingMemberOptional = memberList.stream().filter(m -> m.getUserId().equals(user.getId())).findFirst();
         if (meetingMemberOptional.isEmpty()) {
             throw new BusinessException(ResponseCode.FORBIDDEN);
         }
         return memberList;
-    }
-
-    @Override
-    public List<MeetingReserve> getMeetingReserves() {
-        User user = JwtTokenUtils.getUserInfo();
-        return meetingReserveMapper.getMeetingReserve(user.getId(), MeetingReserveStatus.UN_START.getCode());
     }
 
     /**

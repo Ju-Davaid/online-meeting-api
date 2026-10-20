@@ -1,9 +1,12 @@
 package api.meeting;
 
 import api.meeting.service.MeetingNoService;
+import cn.hutool.core.date.DateUtil;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.Date;
 
 @SpringBootTest
 public class MeetingNoTest {
@@ -12,6 +15,10 @@ public class MeetingNoTest {
 
     @Test
     public void test() {
-        System.out.println(meetingNoService.createUniqueMeetingCode());
+        Date beginOfToday = DateUtil.beginOfDay(new Date());
+        Date endOfToday = DateUtil.endOfDay(new Date());
+        System.out.println(beginOfToday);
+        System.out.println(endOfToday);
+//        System.out.println(meetingNoService.createUniqueMeetingCode());
     }
 }

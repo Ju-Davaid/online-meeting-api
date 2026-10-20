@@ -10,5 +10,4 @@ import java.util.List;
  * 会议预约Mapper
  */
 public interface MeetingReserveMapper extends BaseMapper<MeetingReserve> {
-    List<MeetingReserve> getMeetingReserve(@Param("createdUserId") String createdUserId, @Param("status") Integer status);
 }

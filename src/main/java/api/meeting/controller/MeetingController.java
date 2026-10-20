@@ -121,14 +121,14 @@ public class MeetingController {
     }
 
     @GetMapping("/delete")
-    public ResponseVO<?> deleteMeeting() {
-        meetingService.deleteMeeting();
+    public ResponseVO<?> deleteMeeting(@NotEmpty(message = "会议ID不能为空") String meetingId) {
+        meetingService.deleteMeeting(meetingId);
         return ResponseVO.success("删除会议成功");
     }
 
     @GetMapping("/members")
-    public ResponseVO<?> getMeetingMembers() {
-        return ResponseVO.success("获取会议成员成功", meetingService.getMeetingMembers());
+    public ResponseVO<?> getMeetingMembers(@NotEmpty(message = "会议ID不能为空") String meetingId) {
+        return ResponseVO.success("获取会议成员成功", meetingService.getMeetingMembers(meetingId));
     }
 
     @GetMapping("/testSendMessage")

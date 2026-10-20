@@ -1,5 +1,6 @@
 package api.meeting.entity.po;
 
+import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
 import java.util.Date;
@@ -9,6 +10,7 @@ import java.util.Date;
  */
 @Data
 public class MeetingReserve {
+    @TableId
     private String meetingId;
     private String meetingName;
     private Integer joinType;
