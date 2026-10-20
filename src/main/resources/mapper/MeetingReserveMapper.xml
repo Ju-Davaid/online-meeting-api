@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="api.meeting.mapper.MeetingReserveMapper">
+    <resultMap id="meetingReserveResultMap" type="api.meeting.entity.po.MeetingReserve">
+        <result column="meeting_id" property="meetingId"/>
+        <result column="meeting_name" property="meetingName"/>
+        <result column="join_type" property="joinType"/>
+        <result column="join_password" property="joinPassword"/>
+        <result column="duration" property="duration"/>
+        <result column="start_time" property="startTime"/>
+        <result column="created_time" property="createdTime"/>
+        <result column="created_user_id" property="createdUserId"/>
+        <result column="status" property="status"/>
+    </resultMap>
+    <!-- 获取用户预约的会议 -->
+    <select id="getMeetingReserve" resultMap="meetingReserveResultMap">
+        SELECT mr.*, m.meeting_name, m.join_type, m.join_password, m.start_time
+        FROM meeting_reserve mr
+                 LEFT JOIN meeting m ON mr.meeting_id = m.id
+        WHERE mr.created_user_id = #{createdUserId}
+          AND m.status = #{status}
+        ORDER BY mr.created_time DESC
+    </select>
+</mapper>

@@ -4,9 +4,13 @@ import api.meeting.entity.dto.PreJoinMeetingDTO;
 import api.meeting.entity.dto.QuickMeetingDTO;
 import api.meeting.entity.enums.MeetingMemberStatus;
 import api.meeting.entity.po.Meeting;
+import api.meeting.entity.po.MeetingMember;
+import api.meeting.entity.po.MeetingReserve;
 import api.meeting.entity.vo.PageVO;
 import api.meeting.entity.vo.ResponseVO;
 import com.baomidou.mybatisplus.spring.service.IService;
+
+import java.util.List;
 
 /**
  * 会议服务接口
@@ -75,4 +79,14 @@ public interface MeetingService extends IService<Meeting> {
      * 删除会议
      */
     void deleteMeeting();
+
+    /**
+     * 获取会议成员
+     */
+    List<MeetingMember> getMeetingMembers();
+
+    /**
+     * 获取会议预约
+     */
+    List<MeetingReserve> getMeetingReserves();
 }

@@ -122,7 +122,13 @@ public class MeetingController {
 
     @GetMapping("/delete")
     public ResponseVO<?> deleteMeeting() {
+        meetingService.deleteMeeting();
         return ResponseVO.success("删除会议成功");
+    }
+
+    @GetMapping("/members")
+    public ResponseVO<?> getMeetingMembers() {
+        return ResponseVO.success("获取会议成员成功", meetingService.getMeetingMembers());
     }
 
     @GetMapping("/testSendMessage")

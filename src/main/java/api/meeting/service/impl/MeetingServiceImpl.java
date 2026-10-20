@@ -5,11 +5,13 @@ import api.meeting.entity.dto.*;
 import api.meeting.entity.enums.*;
 import api.meeting.entity.po.Meeting;
 import api.meeting.entity.po.MeetingMember;
+import api.meeting.entity.po.MeetingReserve;
 import api.meeting.entity.po.User;
 import api.meeting.entity.vo.PageVO;
 import api.meeting.exception.BusinessException;
 import api.meeting.mapper.MeetingMapper;
 import api.meeting.mapper.MeetingMemberMapper;
+import api.meeting.mapper.MeetingReserveMapper;
 import api.meeting.service.MeetingService;
 import api.meeting.service.UserService;
 import api.meeting.utils.JwtTokenUtils;
@@ -29,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * 会议服务实现类
@@ -42,6 +45,7 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
     private final ChannelContextUtil channelContextUtil;
     private final MessageHandler messageHandler;
     private final RedisUtils<MeetingMemberDTO> redisUtils;
+    private final MeetingReserveMapper meetingReserveMapper;
 
     @Override
     public PageVO<Meeting> getMeetingList(Integer pageNum, Integer pageSize) {
@@ -253,6 +257,25 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
                 .eq(MeetingMember::getMeetingId, user.getMeetingId())
                 .eq(MeetingMember::getUserId, user.getId())
         );
+    }
+
+    @Override
+    public List<MeetingMember> getMeetingMembers() {
+        User user = JwtTokenUtils.getUserInfo();
+        List<MeetingMember> memberList = meetingMemberMapper.selectList(new LambdaQueryWrapper<MeetingMember>()
+                .eq(MeetingMember::getMeetingId, user.getMeetingId())
+        );
+        Optional<MeetingMember> meetingMemberOptional = memberList.stream().filter(m -> m.getUserId().equals(user.getId())).findFirst();
+        if (meetingMemberOptional.isEmpty()) {
+            throw new BusinessException(ResponseCode.FORBIDDEN);
+        }
+        return memberList;
+    }
+
+    @Override
+    public List<MeetingReserve> getMeetingReserves() {
+        User user = JwtTokenUtils.getUserInfo();
+        return meetingReserveMapper.getMeetingReserve(user.getId(), MeetingReserveStatus.UN_START.getCode());
     }
 
     /**
