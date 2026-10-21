@@ -14,6 +14,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -59,30 +60,34 @@ public class MeetingReserveServiceImpl extends ServiceImpl<MeetingReserveMapper,
         meetingReserve.setCreatedTime(new Date());
         // 插入会议预约记录
         meetingReserveMapper.insert(meetingReserve);
+        List<MeetingReserveMember> reserveMembers = new ArrayList<>();
         // 插入会议预约成员
         if (!StrUtil.isBlankIfStr(dto.getInviteUserIds())) {
             String[] userIds = dto.getInviteUserIds().split(",");
-            List<MeetingReserveMember> reserveMembers = Arrays.stream(userIds).map(userId -> {
+            for (String userId : userIds) {
                 MeetingReserveMember meetingReserveMember = new MeetingReserveMember();
                 meetingReserveMember.setMeetingId(meetingId);
                 meetingReserveMember.setInviteUserId(userId);
-                return meetingReserveMember;
-            }).collect(Collectors.toCollection(ArrayList::new));
-            MeetingReserveMember meetingReserveMember = new MeetingReserveMember();
-            meetingReserveMember.setMeetingId(meetingId);
-            meetingReserveMember.setInviteUserId(user.getId());
-            reserveMembers.add(meetingReserveMember);
-            meetingReserveMemberMapper.insert(reserveMembers);
+                reserveMembers.add(meetingReserveMember);
+            }
         }
+        MeetingReserveMember meetingReserveMember = new MeetingReserveMember();
+        meetingReserveMember.setMeetingId(meetingId);
+        meetingReserveMember.setInviteUserId(user.getId());
+        log.info("创建会议预约成员: {}", JSONUtil.toJsonStr(reserveMembers));
+        reserveMembers.add(meetingReserveMember);
+        meetingReserveMemberMapper.insert(reserveMembers);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteMeetingReserve(String meetingId, String userId) {
+        log.info("删除会议预约: {}, {}", meetingId, userId);
         int count = meetingReserveMapper.delete(new LambdaQueryWrapper<MeetingReserve>()
                 .eq(MeetingReserve::getMeetingId, meetingId)
                 .eq(MeetingReserve::getCreatedUserId, userId)
         );
+        log.info("删除会议预约记录: {}", count);
         if (count > 0) {
             meetingReserveMemberMapper.delete(new LambdaQueryWrapper<MeetingReserveMember>()
                     .eq(MeetingReserveMember::getMeetingId, meetingId)

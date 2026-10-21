@@ -6,14 +6,20 @@ import api.meeting.exception.BusinessException;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSourceResolvable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindException;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
+import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 异常处理控制器
@@ -47,13 +53,20 @@ public class ExceptionHandleController {
      * @param response  HTTP响应对象
      * @return 响应VO
      */
-    @ExceptionHandler({BindException.class, ConstraintViolationException.class})
+    @ExceptionHandler({BindException.class, ConstraintViolationException.class, HandlerMethodValidationException.class})
     public ResponseVO<?> handelValidateException(Exception exception, HttpServletResponse response) {
         Map<String, Object> errors = new HashMap<>();
         if (exception instanceof BindException) {
             ((BindException) exception).getBindingResult().getFieldErrors().forEach(fieldError -> errors.put(fieldError.getField(), fieldError.getDefaultMessage()));
         } else if (exception instanceof ConstraintViolationException) {
             ((ConstraintViolationException) exception).getConstraintViolations().forEach(constraintViolation -> errors.put(constraintViolation.getPropertyPath().toString(), constraintViolation.getMessage()));
+        } else if (exception instanceof HandlerMethodValidationException handlerMethodValidationException) {
+            for (ParameterValidationResult result : handlerMethodValidationException.getParameterValidationResults()) {
+                String paramName = result.getMethodParameter().getParameterName();
+                for (MessageSourceResolvable err : result.getResolvableErrors()) {
+                    errors.put(paramName, err.getDefaultMessage());
+                }
+            }
         }
         ResponseCode responseCode = ResponseCode.ILLEGAL_PARAM;
         response.setStatus(responseCode.getCode());
