@@ -109,17 +109,43 @@ public class MeetingController {
         return ResponseVO.success("拉黑会议成功");
     }
 
+    /**
+     * 结束会议
+     *
+     * @return 结束会议成功
+     */
     @GetMapping("/end")
     public ResponseVO<?> endMeeting() {
         meetingService.endMeeting();
         return ResponseVO.success("结束会议成功");
     }
 
+    /**
+     * 获取当前会议
+     *
+     * @return 当前会议
+     */
     @GetMapping("/current")
     public ResponseVO<?> currentMeeting() {
         return ResponseVO.success("获取当前会议成功", meetingService.getCurrentMeeting());
     }
 
+    /**
+     * 预加入会议
+     *
+     * @return 预加入会议成功
+     */
+    @GetMapping("/reserveJoin")
+    public ResponseVO<?> reserveJoinMeeting(@NotEmpty(message = "会议ID不能为空") String meetingId, @NotEmpty(message = "昵称不能为空") String nickName, String joinPassword) {
+        meetingService.reserveJoinMeeting(meetingId, nickName, joinPassword);
+        return ResponseVO.success("预加入会议成功");
+    }
+
+    /**
+     * 删除会议
+     *
+     * @return 删除会议成功
+     */
     @GetMapping("/delete")
     public ResponseVO<?> deleteMeeting(@NotEmpty(message = "会议ID不能为空") String meetingId) {
         meetingService.deleteMeeting(meetingId);

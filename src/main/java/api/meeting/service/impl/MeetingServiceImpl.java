@@ -3,13 +3,13 @@ package api.meeting.service.impl;
 import api.meeting.constant.RedisCacheKey;
 import api.meeting.entity.dto.*;
 import api.meeting.entity.enums.*;
-import api.meeting.entity.po.Meeting;
-import api.meeting.entity.po.MeetingMember;
-import api.meeting.entity.po.User;
+import api.meeting.entity.po.*;
 import api.meeting.entity.vo.PageVO;
 import api.meeting.exception.BusinessException;
 import api.meeting.mapper.MeetingMapper;
 import api.meeting.mapper.MeetingMemberMapper;
+import api.meeting.mapper.MeetingReserveMapper;
+import api.meeting.mapper.MeetingReserveMemberMapper;
 import api.meeting.service.MeetingNoService;
 import api.meeting.service.MeetingService;
 import api.meeting.service.UserService;
@@ -45,6 +45,8 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
     private final MessageHandler messageHandler;
     private final RedisUtils<MeetingMemberDTO> redisUtils;
     private final MeetingNoService meetingNoService;
+    private final MeetingReserveMapper meetingReserveMapper;
+    private final MeetingReserveMemberMapper reserveMemberMapper;
 
     @Override
     public PageVO<Meeting> getMeetingList(Integer pageNum, Integer pageSize) {
@@ -231,7 +233,11 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
         updateMeetingMember.setMeetingStatus(MeetingStatus.ENDED.getCode());
         meetingMemberMapper.update(updateMeetingMember, new LambdaQueryWrapper<MeetingMember>()
                 .eq(MeetingMember::getMeetingId, meeting.getId()));
-        // TODO 更新预约用户状态
+        // 更新预约会议状态
+        MeetingReserve meetingReserve = new MeetingReserve();
+        meetingReserve.setMeetingId(meeting.getId());
+        meetingReserve.setStatus(MeetingReserveStatus.ENDED.getCode());
+        meetingReserveMapper.updateById(meetingReserve);
 
         List<MeetingMemberDTO> meetingMemberDTOList = redisUtils.hValues(RedisCacheKey.getMeetingRoomKey(meeting.getId()));
         // 更新用户会议ID为null
@@ -270,6 +276,47 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
         }
         return memberList;
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void reserveJoinMeeting(String meetingId, String nickname, String joinPassword) {
+        User user = JwtTokenUtils.getUserInfo();
+        if (Objects.equals(user.getMeetingId(), meetingId)) {
+            throw new BusinessException("你有未结束的会议无法加入其它会议");
+        }
+        checkMeetingJoin(meetingId, user.getId());
+        MeetingReserve reserve = meetingReserveMapper.selectOne(new LambdaQueryWrapper<MeetingReserve>().eq(MeetingReserve::getMeetingId, meetingId));
+        if (reserve == null) {
+            throw new BusinessException(ResponseCode.ILLEGAL_PARAM);
+        }
+        MeetingReserveMember reserveMember = reserveMemberMapper.selectOne(new LambdaQueryWrapper<MeetingReserveMember>()
+                .eq(MeetingReserveMember::getMeetingId, meetingId)
+                .eq(MeetingReserveMember::getInviteUserId, user.getId()));
+        if (reserveMember == null) {
+            throw new BusinessException(ResponseCode.UNAUTHORIZED);
+        }
+        if (MeetingJoinType.PASSWORD.getCode().equals(reserve.getJoinType()) && !reserve.getJoinPassword().equals(joinPassword)) {
+            throw new BusinessException("加入密码错误");
+        }
+        Meeting meeting = meetingMapper.selectById(meetingId);
+        if (meeting == null) {
+            meeting = new Meeting();
+            meeting.setMeetingName(reserve.getMeetingName());
+            meeting.setMeetingNo(meetingNoService.createUniqueMeetingCode());
+            meeting.setJoinType(reserve.getJoinType());
+            meeting.setJoinPassword(reserve.getJoinPassword());
+            Date now = new Date();
+            meeting.setCreatedTime(now);
+            meeting.setId(meetingId);
+            meeting.setStartTime(now);
+            meeting.setStatus(MeetingStatus.RUNNING.getCode());
+            meeting.setCreatedUserId(user.getId());
+            user.setMeetingId(meetingId);
+            userService.updateById(user);
+            meetingMapper.insert(meeting);
+        }
+    }
+
 
     /**
      * 加入会议会员

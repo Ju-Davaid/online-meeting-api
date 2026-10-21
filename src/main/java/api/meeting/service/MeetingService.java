@@ -85,4 +85,12 @@ public interface MeetingService extends IService<Meeting> {
      */
     List<MeetingMember> getMeetingMembers(String meetingId);
 
+    /**
+     * 预加入会议
+     *
+     * @param meetingId    会议ID
+     * @param nickname     昵称
+     * @param joinPassword 加入密码
+     */
+    void reserveJoinMeeting(String meetingId, String nickname, String joinPassword);
 }
