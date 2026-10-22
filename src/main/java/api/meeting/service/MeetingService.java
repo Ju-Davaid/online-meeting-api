@@ -73,7 +73,7 @@ public interface MeetingService extends IService<Meeting> {
     /**
      * 结束会议
      */
-    void endMeeting();
+    void endMeeting(String meetingId,String userId);
 
     /**
      * 删除会议

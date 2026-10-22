@@ -5,9 +5,11 @@ import api.meeting.entity.dto.PreJoinMeetingDTO;
 import api.meeting.entity.dto.QuickMeetingDTO;
 import api.meeting.entity.enums.MeetingMemberStatus;
 import api.meeting.entity.po.Meeting;
+import api.meeting.entity.po.User;
 import api.meeting.entity.vo.PageVO;
 import api.meeting.entity.vo.ResponseVO;
 import api.meeting.service.MeetingService;
+import api.meeting.utils.JwtTokenUtils;
 import api.meeting.websocket.message.MessageHandler;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -116,7 +118,9 @@ public class MeetingController {
      */
     @GetMapping("/end")
     public ResponseVO<?> endMeeting() {
-        meetingService.endMeeting();
+        User user = JwtTokenUtils.getUserInfo();
+        String meetingId = user.getMeetingId();
+        meetingService.endMeeting(meetingId,user.getId());
         return ResponseVO.success("结束会议成功");
     }
 

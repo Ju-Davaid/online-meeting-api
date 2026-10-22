@@ -175,8 +175,17 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
         List<MeetingMemberDTO> onlineMemberDTOList = memberList.stream().filter(member -> member.getStatus().equals(MeetingMemberStatus.NORMAL.getCode())).toList();
 
         if (onlineMemberDTOList.isEmpty()) {
-            endMeeting();
-            return;
+            MeetingReserve meetingReserve = meetingReserveMapper.selectById(meetingId);
+            if (meetingReserve == null) {
+                endMeeting(meetingId, null);
+                return;
+            }
+            // 如果会议结束时间已过，结束会议
+            long meetingEndTime = meetingReserve.getStartTime().getTime() + meetingReserve.getDuration();
+            if (new Date().after(new Date(meetingEndTime))) {
+                endMeeting(meetingId, null);
+                return;
+            }
         }
         // 如果退出用户是拉黑或踢出状态，更新
         if (ArrayUtil.contains(new Integer[]{MeetingMemberStatus.BLACKLISTED.getCode(), MeetingMemberStatus.KICKED.getCode()}, status.getCode())) {
@@ -212,10 +221,9 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void endMeeting() {
-        User user = JwtTokenUtils.getUserInfo();
-        Meeting meeting = meetingMapper.selectById(user.getMeetingId());
-        if (meeting != null && !meeting.getCreatedUserId().equals(user.getId())) {
+    public void endMeeting(String meetingId, String userId) {
+        Meeting meeting = meetingMapper.selectById(meetingId);
+        if (meeting != null && !meeting.getCreatedUserId().equals(userId)) {
             throw new BusinessException(ResponseCode.FORBIDDEN);
         }
         Meeting updateMeeting = new Meeting();
@@ -242,11 +250,11 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
         List<MeetingMemberDTO> meetingMemberDTOList = redisUtils.hValues(RedisCacheKey.getMeetingRoomKey(meeting.getId()));
         // 更新用户会议ID为null
         List<String> userIdList = meetingMemberDTOList.stream().map(MeetingMemberDTO::getUserId).toList();
-        List<User> updateUserList = userIdList.stream().map(userId -> {
+        List<User> updateUserList = userIdList.stream().map(id -> {
             User updateUser = new User();
-            updateUser.setId(userId);
+            updateUser.setId(id);
             updateUser.setMeetingId(null);
-            return user;
+            return updateUser;
         }).toList();
         userService.updateBatchById(updateUserList);
         // 删除会议房间中的用户
