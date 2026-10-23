@@ -18,4 +18,19 @@ public enum UserContactApplyStatus {
 
     private final Integer code;
     private final String desc;
+
+    /**
+     * 根据状态获取枚举
+     *
+     * @param code 状态码
+     * @return 枚举
+     */
+    public static UserContactApplyStatus getByCode(Integer code) {
+        for (UserContactApplyStatus status : UserContactApplyStatus.values()) {
+            if (status.getCode().equals(code)) {
+                return status;
+            }
+        }
+        return null;
+    }
 }

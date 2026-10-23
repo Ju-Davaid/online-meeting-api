@@ -1,5 +1,6 @@
 package api.meeting.entity.po;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
@@ -16,4 +17,8 @@ public class UserContactApply {
     private String receiveUserId;
     private Date lastApplyTime;
     private Integer status;
+    @TableField(exist = false)
+    private String nickname;
+    @TableField(exist = false)
+    private Integer userStatus;
 }

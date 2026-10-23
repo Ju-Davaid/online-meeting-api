@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="api.meeting.mapper.UserContactMapper">
+    <resultMap id="userContactResultMap" type="api.meeting.entity.po.UserContact">
+        <result column="user_id" property="userId"/>
+        <result column="contact_id" property="contactId"/>
+        <result column="status" property="status"/>
+        <result column="last_update_time" property="lastUpdateTime"/>
+        <result column="nickname" property="nickname"/>
+        <result column="user_status" property="userStatus"/>
+        <result column="last_login_time" property="lastLoginTime"/>
+        <result column="last_off_time" property="lastOffTime"/>
+    </resultMap>
+    <!-- 查询用户好友列表 -->
+    <select id="getUserContactList" resultMap="userContactResultMap" parameterType="java.lang.String">
+        SELECT
+        uc.*,
+        u.username as nickname,
+        u.`status` as user_status,
+        u.last_login_time,
+        u.last_off_time
+        FROM
+        user_contact uc
+        LEFT JOIN `user` u on u.id = uc.contact_id
+        WHERE uc.user_id = #{userId}
+    </select>
+</mapper>
