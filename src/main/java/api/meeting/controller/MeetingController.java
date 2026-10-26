@@ -120,7 +120,7 @@ public class MeetingController {
     public ResponseVO<?> endMeeting() {
         User user = JwtTokenUtils.getUserInfo();
         String meetingId = user.getMeetingId();
-        meetingService.endMeeting(meetingId,user.getId());
+        meetingService.endMeeting(meetingId, user.getId());
         return ResponseVO.success("结束会议成功");
     }
 
@@ -159,6 +159,18 @@ public class MeetingController {
     @GetMapping("/members")
     public ResponseVO<?> getMeetingMembers(@NotEmpty(message = "会议ID不能为空") String meetingId) {
         return ResponseVO.success("获取会议成员成功", meetingService.getMeetingMembers(meetingId));
+    }
+
+    @GetMapping("/invite")
+    public ResponseVO<?> inviteMeeting(@NotEmpty(message = "目标用户ID不能为空") String targetUserIds) {
+        meetingService.invite(targetUserIds);
+        return ResponseVO.success("邀请会议成功");
+    }
+
+    @GetMapping("/permit")
+    public ResponseVO<?> permitMeeting(@NotEmpty(message = "会议ID不能为空") String meetingId) {
+        meetingService.permitInvite(meetingId);
+        return ResponseVO.success("同意会议成功");
     }
 
     @GetMapping("/testSendMessage")

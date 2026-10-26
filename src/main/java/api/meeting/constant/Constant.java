@@ -44,4 +44,9 @@ public class Constant {
      * 心跳响应消息键
      */
     public static final String PONG = "PONG";
+
+    /**
+     * 会议邀请过期时间（分钟）
+     */
+    public static final int INVITE_DURATION = 5;
 }

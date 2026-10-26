@@ -34,4 +34,6 @@ public interface MessageHandler {
      * @param <T>            消息类型
      */
     <T> void sendMessage(MessageSendDTO<T> messageSendDTO);
+
+    void set();
 }

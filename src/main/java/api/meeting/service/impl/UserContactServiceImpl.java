@@ -4,7 +4,7 @@ import api.meeting.entity.dto.MessageSendDTO;
 import api.meeting.entity.enums.MessageSendType;
 import api.meeting.entity.enums.MessageType;
 import api.meeting.entity.enums.ResponseCode;
-import api.meeting.entity.enums.UserContactApplyStatus;
+import api.meeting.entity.enums.UserContactStatus;
 import api.meeting.entity.po.User;
 import api.meeting.entity.po.UserContact;
 import api.meeting.entity.po.UserContactApply;
@@ -16,6 +16,7 @@ import api.meeting.mapper.UserMapper;
 import api.meeting.service.UserContactService;
 import api.meeting.utils.JwtTokenUtils;
 import api.meeting.websocket.message.MessageHandler;
+import cn.hutool.core.util.ArrayUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +57,7 @@ public class UserContactServiceImpl implements UserContactService {
         log.info("targetId:{} currentId:{}", searchVO.getUserId(), currentUser.getId());
         // 搜索自己 —— 直接返回，无意义做后续查询
         if (currentUser.getId().equals(targetUser.getId())) {
-            searchVO.setStatus(-UserContactApplyStatus.PASS.getCode());
+            searchVO.setStatus(-UserContactStatus.PASS.getCode());
             return searchVO;
         }
 
@@ -66,8 +67,8 @@ public class UserContactServiceImpl implements UserContactService {
                 .eq(UserContact::getContactId, currentUser.getId()));
 
         if (targetUserContact != null
-                && targetUserContact.getStatus().equals(UserContactApplyStatus.BLACKED.getCode())) {
-            searchVO.setStatus(UserContactApplyStatus.BLACKED.getCode());
+                && targetUserContact.getStatus().equals(UserContactStatus.BLACKED.getCode())) {
+            searchVO.setStatus(UserContactStatus.BLACKED.getCode());
             return searchVO;
         }
 
@@ -78,13 +79,13 @@ public class UserContactServiceImpl implements UserContactService {
         );
 
         if (contactApply != null
-                && contactApply.getStatus().equals(UserContactApplyStatus.BLACKED.getCode())) {
-            searchVO.setStatus(UserContactApplyStatus.BLACKED.getCode());
+                && contactApply.getStatus().equals(UserContactStatus.BLACKED.getCode())) {
+            searchVO.setStatus(UserContactStatus.BLACKED.getCode());
             return searchVO;
         }
         if (contactApply != null
-                && contactApply.getStatus().equals(UserContactApplyStatus.APPLYING.getCode())) {
-            searchVO.setStatus(UserContactApplyStatus.APPLYING.getCode());
+                && contactApply.getStatus().equals(UserContactStatus.APPLYING.getCode())) {
+            searchVO.setStatus(UserContactStatus.APPLYING.getCode());
             return searchVO;
         }
 
@@ -94,10 +95,10 @@ public class UserContactServiceImpl implements UserContactService {
                 .eq(UserContact::getContactId, targetUser.getId()));
 
         if (targetUserContact != null
-                && targetUserContact.getStatus().equals(UserContactApplyStatus.FRIENDED.getCode())
+                && targetUserContact.getStatus().equals(UserContactStatus.FRIENDED.getCode())
                 && myUserContact != null
-                && myUserContact.getStatus().equals(UserContactApplyStatus.FRIENDED.getCode())) {
-            searchVO.setStatus(UserContactApplyStatus.FRIENDED.getCode());
+                && myUserContact.getStatus().equals(UserContactStatus.FRIENDED.getCode())) {
+            searchVO.setStatus(UserContactStatus.FRIENDED.getCode());
             return searchVO;
         }
         return null;
@@ -111,19 +112,19 @@ public class UserContactServiceImpl implements UserContactService {
                 .eq(UserContact::getUserId, targetUserId)
                 .eq(UserContact::getContactId, currentUser.getId())
         );
-        if (targetContact != null && UserContactApplyStatus.BLACKED.getCode().equals(targetContact.getStatus())) {
+        if (targetContact != null && UserContactStatus.BLACKED.getCode().equals(targetContact.getStatus())) {
             throw new BusinessException("对方已将你拉黑");
         }
         // 检查对方是否已添加你为好友
-        if (targetContact != null && UserContactApplyStatus.FRIENDED.getCode().equals(targetContact.getStatus())) {
+        if (targetContact != null && UserContactStatus.FRIENDED.getCode().equals(targetContact.getStatus())) {
             UserContact updateContact = new UserContact();
-            updateContact.setStatus(UserContactApplyStatus.FRIENDED.getCode());
+            updateContact.setStatus(UserContactStatus.FRIENDED.getCode());
             updateContact.setLastUpdateTime(new Date());
             // 更新当前用户联系人表
             userContactMapper.update(updateContact, new LambdaQueryWrapper<UserContact>()
                     .eq(UserContact::getUserId, currentUser.getId())
                     .eq(UserContact::getContactId, targetUserId));
-            return UserContactApplyStatus.FRIENDED.getCode();
+            return UserContactStatus.FRIENDED.getCode();
         }
         // 检查当前用户是否已申请过目标用户
         UserContactApply currentUserContactApply = userContactApplyMapper.selectOne(
@@ -135,10 +136,10 @@ public class UserContactServiceImpl implements UserContactService {
             currentUserContactApply = new UserContactApply();
             currentUserContactApply.setApplyUserId(currentUser.getId());
             currentUserContactApply.setReceiveUserId(targetUserId);
-            currentUserContactApply.setStatus(UserContactApplyStatus.APPLYING.getCode());
+            currentUserContactApply.setStatus(UserContactStatus.APPLYING.getCode());
             currentUserContactApply.setLastApplyTime(new Date());
         } else {
-            currentUserContactApply.setStatus(UserContactApplyStatus.APPLYING.getCode());
+            currentUserContactApply.setStatus(UserContactStatus.APPLYING.getCode());
             currentUserContactApply.setLastApplyTime(new Date());
             userContactApplyMapper.updateById(currentUserContactApply);
         }
@@ -147,16 +148,16 @@ public class UserContactServiceImpl implements UserContactService {
         sendDTO.setMessageSendType(MessageSendType.USER.getCode());
         sendDTO.setMessageType(MessageType.FRIEND_APPLY.getCode());
         sendDTO.setReceiveUserId(targetUserId);
-        sendDTO.setMessageContent(UserContactApplyStatus.APPLYING.getCode());
+        sendDTO.setMessageContent(UserContactStatus.APPLYING.getCode());
         messageHandler.sendMessage(sendDTO);
-        return UserContactApplyStatus.APPLYING.getCode();
+        return UserContactStatus.APPLYING.getCode();
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void handleApply(String targetUserId, Integer status) {
-        UserContactApplyStatus applyStatus = UserContactApplyStatus.getByCode(status);
-        if (applyStatus == null || UserContactApplyStatus.APPLYING.equals(applyStatus)) {
+        UserContactStatus applyStatus = UserContactStatus.getByCode(status);
+        if (applyStatus == null || UserContactStatus.APPLYING.equals(applyStatus)) {
             throw new BusinessException(ResponseCode.ILLEGAL_PARAM);
         }
         User currentUser = JwtTokenUtils.getUserInfo();
@@ -169,18 +170,18 @@ public class UserContactServiceImpl implements UserContactService {
         if (currentUserApply == null) {
             throw new BusinessException(ResponseCode.ILLEGAL_PARAM);
         }
-        if (UserContactApplyStatus.PASS.getCode().equals(applyStatus.getCode())) {
+        if (UserContactStatus.PASS.getCode().equals(applyStatus.getCode())) {
             Date now = new Date();
             UserContact newContact = new UserContact();
             newContact.setUserId(currentUser.getId());
             newContact.setContactId(targetUserId);
             newContact.setLastUpdateTime(now);
-            newContact.setStatus(UserContactApplyStatus.FRIENDED.getCode());
-            this.userContactInsertOrUpdate(newContact);
+            newContact.setStatus(UserContactStatus.FRIENDED.getCode());
+            this.insertOrUpdateUserContact(newContact);
             // 互加好友
             newContact.setUserId(targetUserId);
             newContact.setContactId(currentUser.getId());
-            this.userContactInsertOrUpdate(newContact);
+            this.insertOrUpdateUserContact(newContact);
         }
         // 更新好友申请状态
         currentUserApply.setStatus(applyStatus.getCode());
@@ -208,13 +209,36 @@ public class UserContactServiceImpl implements UserContactService {
         return userContactApplyMapper.getUserContactApplyList(currentUser.getId());
     }
 
+    @Override
+    public long getApplyCount() {
+        User user = JwtTokenUtils.getUserInfo();
+        return userContactApplyMapper.selectCount(new LambdaQueryWrapper<UserContactApply>()
+                .eq(UserContactApply::getReceiveUserId, user.getId())
+                .eq(UserContactApply::getStatus, UserContactStatus.APPLYING.getCode())
+        );
+    }
+
+    @Override
+    public void deleteContact(String contactId, Integer status) {
+        User currentUser = JwtTokenUtils.getUserInfo();
+        if (!ArrayUtil.contains(new Integer[]{UserContactStatus.DELETE.getCode(), UserContactStatus.BLACKED.getCode()}, status)) {
+            throw new BusinessException(ResponseCode.ILLEGAL_PARAM);
+        }
+        UserContact userContact = new UserContact();
+        userContact.setLastUpdateTime(new Date());
+        userContact.setStatus(status);
+        userContactMapper.update(userContact, new LambdaQueryWrapper<UserContact>()
+                .eq(UserContact::getUserId, currentUser.getId())
+                .eq(UserContact::getContactId, contactId));
+    }
+
 
     /**
      * 插入或更新用户联系人
      *
      * @param userContact 用户联系人
      */
-    private void userContactInsertOrUpdate(UserContact userContact) {
+    private void insertOrUpdateUserContact(UserContact userContact) {
         try {
             UserContact contact = userContactMapper.selectOne(
                     new LambdaQueryWrapper<UserContact>()

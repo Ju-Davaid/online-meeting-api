@@ -1,15 +1,13 @@
 package api.meeting.service.impl;
 
+import api.meeting.constant.Constant;
 import api.meeting.constant.RedisCacheKey;
 import api.meeting.entity.dto.*;
 import api.meeting.entity.enums.*;
 import api.meeting.entity.po.*;
 import api.meeting.entity.vo.PageVO;
 import api.meeting.exception.BusinessException;
-import api.meeting.mapper.MeetingMapper;
-import api.meeting.mapper.MeetingMemberMapper;
-import api.meeting.mapper.MeetingReserveMapper;
-import api.meeting.mapper.MeetingReserveMemberMapper;
+import api.meeting.mapper.*;
 import api.meeting.service.MeetingNoService;
 import api.meeting.service.MeetingService;
 import api.meeting.service.UserService;
@@ -27,10 +25,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * 会议服务实现类
@@ -47,6 +44,8 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
     private final MeetingNoService meetingNoService;
     private final MeetingReserveMapper meetingReserveMapper;
     private final MeetingReserveMemberMapper reserveMemberMapper;
+    private final UserContactMapper userContactMapper;
+    private final RedisUtils<String> inviteMemberRedisUtils;
 
     @Override
     public PageVO<Meeting> getMeetingList(Integer pageNum, Integer pageSize) {
@@ -323,6 +322,53 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
             userService.updateById(user);
             meetingMapper.insert(meeting);
         }
+    }
+
+    @Override
+    public void invite(String contactUserIds) {
+        User user = JwtTokenUtils.getUserInfo();
+        String[] contactIds = contactUserIds.split(",");
+        UserContact queryUserContact = new UserContact();
+        queryUserContact.setStatus(UserContactStatus.FRIENDED.getCode());
+        queryUserContact.setUserId(user.getId());
+        List<UserContact> userContactList = userContactMapper.selectList(new LambdaQueryWrapper<UserContact>()
+                .eq(UserContact::getStatus, UserContactStatus.FRIENDED.getCode())
+                .eq(UserContact::getUserId, user.getId()));
+        HashSet<String> friendIds = userContactList.stream().map(UserContact::getContactId).collect(Collectors.toCollection(HashSet::new));
+        if (!friendIds.containsAll(Arrays.asList(contactIds))) {
+            throw new BusinessException(ResponseCode.ILLEGAL_PARAM);
+        }
+        Meeting meeting = meetingMapper.selectById(user.getMeetingId());
+        for (String contactId : contactIds) {
+            MeetingMemberDTO memberDTO = redisUtils.hGet(RedisCacheKey.getMeetingRoomKey(user.getMeetingId()), contactId);
+            if (memberDTO != null && memberDTO.getStatus().equals(MeetingMemberStatus.NORMAL.getCode())) {
+                continue;
+            }
+            inviteMemberRedisUtils.set(RedisCacheKey.getInviteMemberKey(user.getId(), user.getMeetingId()), meeting.getId(), Constant.INVITE_DURATION, TimeUnit.MINUTES);
+            MessageSendDTO<MeetingInviteDTO> messageSendDTO = new MessageSendDTO<>();
+            messageSendDTO.setMessageType(MessageType.INVITE.getCode());
+            messageSendDTO.setMessageSendType(MessageSendType.USER.getCode());
+            messageSendDTO.setReceiveUserId(contactId);
+            messageSendDTO.setSendUserId(user.getId());
+            MeetingInviteDTO inviteDTO = new MeetingInviteDTO();
+            inviteDTO.setMeetingId(user.getMeetingId());
+            inviteDTO.setMeetingName(meeting.getMeetingName());
+            inviteDTO.setInviteUserName(user.getUsername());
+            messageSendDTO.setMessageContent(inviteDTO);
+            messageSendDTO.setSendTime(new Date());
+            messageHandler.sendMessage(messageSendDTO);
+        }
+    }
+
+    @Override
+    public void permitInvite(String meetingId) {
+        User user = JwtTokenUtils.getUserInfo();
+        String redisMeetingId = inviteMemberRedisUtils.get(RedisCacheKey.getInviteMemberKey(user.getId(), user.getMeetingId()));
+        if (redisMeetingId == null) {
+            throw new BusinessException("邀请信息已过期");
+        }
+        user.setMeetingId(redisMeetingId);
+        userService.updateById(user);
     }
 
 

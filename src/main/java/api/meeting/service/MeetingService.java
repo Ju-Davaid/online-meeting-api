@@ -73,7 +73,7 @@ public interface MeetingService extends IService<Meeting> {
     /**
      * 结束会议
      */
-    void endMeeting(String meetingId,String userId);
+    void endMeeting(String meetingId, String userId);
 
     /**
      * 删除会议
@@ -93,4 +93,18 @@ public interface MeetingService extends IService<Meeting> {
      * @param joinPassword 加入密码
      */
     void reserveJoinMeeting(String meetingId, String nickname, String joinPassword);
+
+    /**
+     * 邀请加入会议
+     *
+     * @param targetUserId 目标用户ID
+     */
+    void invite(String targetUserId);
+
+    /**
+     * 同意邀请加入会议
+     *
+     * @param meetingId 会议ID
+     */
+    void permitInvite(String meetingId);
 }

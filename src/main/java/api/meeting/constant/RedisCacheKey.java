@@ -25,6 +25,11 @@ public class RedisCacheKey {
      * 格式：user:userId
      */
     private static final String USER_KEY = "user:%s";
+    /**
+     * 会议邀请会员缓存键
+     * 格式：meeting:invite:userId:会议Id
+     */
+    private static final String INVITE_MEMBER_KEY = "meeting:invite:%s:%s";
 
     /**
      * 获取验证码缓存键
@@ -64,5 +69,16 @@ public class RedisCacheKey {
      */
     public static String getUserKey(String userId) {
         return String.format(USER_KEY, userId);
+    }
+
+    /**
+     * 获取会议邀请会员缓存键
+     *
+     * @param meetingId 会议ID
+     * @param contactId 联系人ID
+     * @return 会议邀请会员缓存键
+     */
+    public static String getInviteMemberKey(String meetingId, String contactId) {
+        return String.format(INVITE_MEMBER_KEY, meetingId, contactId);
     }
 }

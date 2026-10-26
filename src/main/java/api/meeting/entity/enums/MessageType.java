@@ -15,7 +15,8 @@ public enum MessageType {
     PEER(4, "信令消息"),
     END(5, "结束会议"),
     FRIEND_APPLY(6, "好友申请"),
-    HANDLE_APPLY(7, "处理好友申请");
+    HANDLE_APPLY(7, "处理好友申请"),
+    INVITE(8, "邀请入会");
 
 
     private final Integer code;

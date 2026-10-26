@@ -44,4 +44,19 @@ public interface UserContactService {
      * @return 好友申请列表
      */
     List<UserContactApply> getUserContactApplyList();
+
+    /**
+     * 获取用户好友申请数量
+     *
+     * @return 好友申请数量
+     */
+    long getApplyCount();
+
+    /**
+     * 删除好友
+     *
+     * @param contactId 好友ID
+     * @param status    好友状态
+     */
+    void deleteContact(String contactId, Integer status);
 }

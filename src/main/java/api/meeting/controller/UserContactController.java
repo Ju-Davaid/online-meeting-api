@@ -48,7 +48,7 @@ public class UserContactController {
      * 处理好友申请
      *
      * @param targetUserId 目标用户ID
-     * @param status  申请状态
+     * @param status       申请状态
      * @return 处理状态
      */
     @GetMapping("/handle")
@@ -67,8 +67,29 @@ public class UserContactController {
         return ResponseVO.success("获取成功", userContactService.getUserContactList());
     }
 
+    @GetMapping("/delete")
+    public ResponseVO<?> delete(@NotEmpty(message = "好友ID不能为空") String contactId,@NotNull(message = "好友状态不能为空") Integer status) {
+        userContactService.deleteContact(contactId,status);
+        return ResponseVO.success("删除成功");
+    }
+
+    /**
+     * 获取用户好友申请列表
+     *
+     * @return 好友申请列表
+     */
     @GetMapping("/apply/list")
     public ResponseVO<List<UserContactApply>> applyList() {
         return ResponseVO.success("获取成功", userContactService.getUserContactApplyList());
+    }
+
+    /**
+     * 获取用户好友申请数量
+     *
+     * @return 好友申请数量
+     */
+    @GetMapping("/apply/count")
+    public ResponseVO<Long> countApply() {
+        return ResponseVO.success("获取成功", userContactService.getApplyCount());
     }
 }

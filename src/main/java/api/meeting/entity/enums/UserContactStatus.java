@@ -8,12 +8,13 @@ import lombok.Getter;
  */
 @Getter
 @AllArgsConstructor
-public enum UserContactApplyStatus {
+public enum UserContactStatus {
     APPLYING(0, "申请中"),
     PASS(1, "通过"),
     REJECT(2, "拒绝"),
     BLACKED(3, "拉黑"),
-    FRIENDED(4, "已成为好友");
+    FRIENDED(4, "已成为好友"),
+    DELETE(5, "已删除");
 
 
     private final Integer code;
@@ -25,8 +26,8 @@ public enum UserContactApplyStatus {
      * @param code 状态码
      * @return 枚举
      */
-    public static UserContactApplyStatus getByCode(Integer code) {
-        for (UserContactApplyStatus status : UserContactApplyStatus.values()) {
+    public static UserContactStatus getByCode(Integer code) {
+        for (UserContactStatus status : UserContactStatus.values()) {
             if (status.getCode().equals(code)) {
                 return status;
             }
