@@ -371,6 +371,22 @@ public class MeetingServiceImpl extends ServiceImpl<MeetingMapper, Meeting> impl
         userService.updateById(user);
     }
 
+    @Override
+    public void changeVideoStatus(Boolean videoOpen) {
+        User user = JwtTokenUtils.getUserInfo();
+        MeetingMemberDTO memberDTO = redisUtils.hGet(RedisCacheKey.getMeetingRoomKey(user.getMeetingId()), user.getId());
+        memberDTO.setVideoOpen(videoOpen);
+        redisUtils.hSet(RedisCacheKey.getMeetingRoomKey(user.getMeetingId()), user.getId(), memberDTO);
+        MessageSendDTO<Boolean> sendDTO = new MessageSendDTO<>();
+        sendDTO.setMessageType(MessageType.VIDEO_STATUS_CHANGE.getCode());
+        sendDTO.setSendUserId(user.getId());
+        sendDTO.setSendTime(new Date());
+        sendDTO.setMessageContent(videoOpen);
+        sendDTO.setMessageSendType(MessageSendType.GROUP.getCode());
+        sendDTO.setMeetingId(user.getMeetingId());
+        messageHandler.sendMessage(sendDTO);
+    }
+
 
     /**
      * 加入会议会员

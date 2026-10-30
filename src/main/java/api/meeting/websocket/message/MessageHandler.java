@@ -25,8 +25,6 @@ public interface MessageHandler {
     default void listenMessage(Message message, Channel channel) throws IOException {
     }
 
-    ;
-
     /**
      * 发送消息
      *
@@ -35,5 +33,4 @@ public interface MessageHandler {
      */
     <T> void sendMessage(MessageSendDTO<T> messageSendDTO);
 
-    void set();
 }

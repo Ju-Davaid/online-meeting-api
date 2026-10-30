@@ -16,7 +16,8 @@ public enum MessageType {
     END(5, "结束会议"),
     FRIEND_APPLY(6, "好友申请"),
     HANDLE_APPLY(7, "处理好友申请"),
-    INVITE(8, "邀请入会");
+    INVITE(8, "邀请入会"),
+    VIDEO_STATUS_CHANGE(9, "视频状态变更");
 
 
     private final Integer code;

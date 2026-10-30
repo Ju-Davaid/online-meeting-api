@@ -11,6 +11,7 @@ import java.util.Date;
 public class MeetingMemberDTO {
     private String userId;
     private String nickName;
+    private boolean videoOpen;
     private Date joinTime;
     private Integer gender;
     private Integer memberType;

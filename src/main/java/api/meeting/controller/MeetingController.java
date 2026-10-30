@@ -180,4 +180,10 @@ public class MeetingController {
         messageHandler.sendMessage(messageSendDTO);
         return ResponseVO.success("测试发送消息成功");
     }
+
+    @GetMapping("/changeVideoStatus")
+    public ResponseVO<?> changeVideoStatus(@NotNull(message = "是否开启视频不能为空") Boolean videoOpen) {
+        meetingService.changeVideoStatus(videoOpen);
+        return ResponseVO.success("切换视频状态成功");
+    }
 }

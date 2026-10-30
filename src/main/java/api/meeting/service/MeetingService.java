@@ -107,4 +107,11 @@ public interface MeetingService extends IService<Meeting> {
      * @param meetingId 会议ID
      */
     void permitInvite(String meetingId);
+
+    /**
+     * 切换视频状态
+     *
+     * @param videoOpen 是否开启视频
+     */
+    void changeVideoStatus(Boolean videoOpen);
 }
