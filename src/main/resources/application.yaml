@@ -1,3 +1,7 @@
+app:
+  project-location: D:/my_project/online-meeting-api
+  static-location: /file
+  temp-location: /temp
 server:
   port: 8080
 meeting:

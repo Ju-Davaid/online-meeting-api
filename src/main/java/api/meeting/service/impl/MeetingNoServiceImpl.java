@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 会议号编号实现类
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
- *
+ * 预加入会议DTO
  */
 @Data
 public class PreJoinMeetingDTO {

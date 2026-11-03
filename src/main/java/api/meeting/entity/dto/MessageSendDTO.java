@@ -8,6 +8,7 @@ import java.util.Date;
 
 /**
  * 消息发送DTO
+ *
  * @param <T> 消息内容类型
  */
 @Data
@@ -23,6 +24,6 @@ public class MessageSendDTO<T> {
     private String messageId;
     private Integer status;
     private String fileName;
-    private Integer filePath;
-    private String fileSize;
+    private Integer fileType;
+    private Long fileSize;
 }
